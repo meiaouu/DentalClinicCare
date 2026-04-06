@@ -3,12 +3,12 @@
 namespace App\Services\Booking;
 
 use App\Models\Appointment;
-use App\Models\ClinicScheduleBlock;
+use App\Models\ClinicScheduleRule;
 use App\Models\ClinicSetting;
-use App\Models\ClinicWeeklySchedule;
 use App\Models\Dentist;
-use App\Models\DentistScheduleBlock;
+use App\Models\DentistSchedule;
 use App\Models\DentistUnavailableDate;
+use App\Models\ScheduleBlock;
 use App\Models\Service;
 use Carbon\Carbon;
 
@@ -24,7 +24,7 @@ class BookingAvailabilityService
             ->filter(function ($dentist) use ($date, $service) {
                 return $this->hasAnyPossibleSlot(
                     $date,
-                    $dentist->dentist_id,
+                    (int) $dentist->dentist_id,
                     (int) $service->estimated_duration_minutes
                 );
             })
@@ -65,14 +65,14 @@ class BookingAvailabilityService
         $cursor = $open->copy();
 
         while ($cursor->copy()->addMinutes($duration) <= $close) {
-            $startTime = $cursor->format('H:i');
-            $endTime = $cursor->copy()->addMinutes($duration)->format('H:i');
+            $startTime = $cursor->format('H:i:s');
+            $endTime = $cursor->copy()->addMinutes($duration)->format('H:i:s');
 
             if ($this->isRequestedSlotAvailable($date, $startTime, $serviceId, $dentistId)) {
                 $slots[] = [
-                    'start_time' => $startTime,
-                    'end_time' => $endTime,
-                    'label' => $startTime . ' - ' . $endTime,
+                    'start_time' => $cursor->format('H:i'),
+                    'end_time' => Carbon::parse($date . ' ' . $endTime)->format('H:i'),
+                    'label' => $cursor->format('H:i') . ' - ' . Carbon::parse($date . ' ' . $endTime)->format('H:i'),
                 ];
             }
 
@@ -141,11 +141,20 @@ class BookingAvailabilityService
         }
 
         if ($dentistId !== null) {
-            if ($this->isDentistBlocked($dentistId, $date, $slotStart->format('H:i:s'), $slotEnd->format('H:i:s'))) {
+            if (!$this->isDentistScheduled(
+                $dentistId,
+                $date,
+                $slotStart->format('H:i:s'),
+                $slotEnd->format('H:i:s')
+            )) {
                 return false;
             }
 
-            if ($this->hasConfirmedAppointmentConflict(
+            if ($this->isDentistBlocked($dentistId, $date, $slotStart, $slotEnd)) {
+                return false;
+            }
+
+            if ($this->hasApprovedAppointmentConflict(
                 $date,
                 $slotStart->format('H:i:s'),
                 $slotEnd->format('H:i:s'),
@@ -157,12 +166,14 @@ class BookingAvailabilityService
             return true;
         }
 
-        $hasAnyDentist = Dentist::query()
+        return Dentist::query()
             ->where('is_active', 1)
             ->get()
             ->contains(function ($dentist) use ($date, $slotStart, $slotEnd) {
-                if ($this->isDentistBlocked(
-                    $dentist->dentist_id,
+                $dentistId = (int) $dentist->dentist_id;
+
+                if (!$this->isDentistScheduled(
+                    $dentistId,
                     $date,
                     $slotStart->format('H:i:s'),
                     $slotEnd->format('H:i:s')
@@ -170,34 +181,35 @@ class BookingAvailabilityService
                     return false;
                 }
 
-                return !$this->hasConfirmedAppointmentConflict(
+                if ($this->isDentistBlocked($dentistId, $date, $slotStart, $slotEnd)) {
+                    return false;
+                }
+
+                return !$this->hasApprovedAppointmentConflict(
                     $date,
                     $slotStart->format('H:i:s'),
                     $slotEnd->format('H:i:s'),
-                    $dentist->dentist_id
+                    $dentistId
                 );
             });
-
-        return $hasAnyDentist;
     }
 
     public function getClinicDaySchedule(string $date): ?array
     {
-        $dayName = strtolower(Carbon::parse($date)->format('l'));
+        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
 
-        $weekly = ClinicWeeklySchedule::query()
-            ->where('day_of_week', $dayName)
+        $rule = ClinicScheduleRule::query()
+            ->where('day_of_week', $dayOfWeek)
             ->first();
 
-        if (!$weekly || !$weekly->is_open) {
+        if (!$rule || !$rule->is_open) {
             return null;
         }
 
         return [
             'is_open' => true,
-            'open_time' => $weekly->open_time,
-            'close_time' => $weekly->close_time,
-            'is_reserve_only' => $weekly->is_reserve_only,
+            'open_time' => $rule->open_time,
+            'close_time' => $rule->close_time,
         ];
     }
 
@@ -215,13 +227,24 @@ class BookingAvailabilityService
         $close = Carbon::parse($date . ' ' . $daySchedule['close_time']);
 
         while ($cursor->copy()->addMinutes($duration) <= $close) {
-            $start = $cursor->format('H:i:s');
-            $end = $cursor->copy()->addMinutes($duration)->format('H:i:s');
+            $start = $cursor->copy();
+            $end = $cursor->copy()->addMinutes($duration);
 
             if (
-                !$this->hasClinicBlock($date, $start, $end) &&
+                $this->isDentistScheduled(
+                    $dentistId,
+                    $date,
+                    $start->format('H:i:s'),
+                    $end->format('H:i:s')
+                ) &&
+                !$this->hasClinicBlock($date, $start->format('H:i:s'), $end->format('H:i:s')) &&
                 !$this->isDentistBlocked($dentistId, $date, $start, $end) &&
-                !$this->hasConfirmedAppointmentConflict($date, $start, $end, $dentistId)
+                !$this->hasApprovedAppointmentConflict(
+                    $date,
+                    $start->format('H:i:s'),
+                    $end->format('H:i:s'),
+                    $dentistId
+                )
             ) {
                 return true;
             }
@@ -234,44 +257,48 @@ class BookingAvailabilityService
 
     protected function hasClinicBlock(string $date, string $startTime, string $endTime): bool
     {
-        return ClinicScheduleBlock::query()
+        return ScheduleBlock::query()
+            ->where('scope', 'clinic')
             ->whereDate('block_date', $date)
             ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('is_full_day', true)
-                  ->orWhere(function ($sub) use ($startTime, $endTime) {
-                      $sub->where('start_time', '<', $endTime)
-                          ->where('end_time', '>', $startTime);
-                  });
+                    ->orWhere(function ($sub) use ($startTime, $endTime) {
+                        $sub->where('start_time', '<', $endTime)
+                            ->where('end_time', '>', $startTime);
+                    });
             })
             ->exists();
     }
 
-    protected function isDentistBlocked(int $dentistId, string $date, string $startTime, string $endTime): bool
+    protected function isDentistScheduled(int $dentistId, string $date, string $startTime, string $endTime): bool
     {
-        $scheduleBlockExists = DentistScheduleBlock::query()
+        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+
+        return DentistSchedule::query()
             ->where('dentist_id', $dentistId)
-            ->whereDate('block_date', $date)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
-            })
+            ->where('day_of_week', $dayOfWeek)
+            ->where('is_available', true)
+            ->where('start_time', '<=', $startTime)
+            ->where('end_time', '>=', $endTime)
             ->exists();
+    }
 
-        if ($scheduleBlockExists) {
-            return true;
-        }
-
+    protected function isDentistBlocked(int $dentistId, string $date, Carbon $start, Carbon $end): bool
+    {
         return DentistUnavailableDate::query()
             ->where('dentist_id', $dentistId)
             ->whereDate('unavailable_date', $date)
-            ->where(function ($q) use ($startTime, $endTime) {
-                $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
+            ->where(function ($q) use ($start, $end) {
+                $q->whereNull('start_time')
+                    ->orWhere(function ($sub) use ($start, $end) {
+                        $sub->where('start_time', '<', $end->format('H:i:s'))
+                            ->where('end_time', '>', $start->format('H:i:s'));
+                    });
             })
             ->exists();
     }
 
-    protected function hasConfirmedAppointmentConflict(
+    protected function hasApprovedAppointmentConflict(
         string $date,
         string $startTime,
         string $endTime,
@@ -280,10 +307,10 @@ class BookingAvailabilityService
         return Appointment::query()
             ->whereDate('appointment_date', $date)
             ->where('dentist_id', $dentistId)
-            ->whereIn('status', ['confirmed', 'checked_in', 'in_progress'])
+            ->whereIn('status', ['approved', 'completed', 'checked_in', 'in_progress'])
             ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('start_time', '<', $endTime)
-                  ->where('end_time', '>', $startTime);
+                    ->where('end_time', '>', $startTime);
             })
             ->exists();
     }

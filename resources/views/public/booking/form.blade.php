@@ -420,7 +420,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return;
     }
 
-    let url = `/booking/available-slots?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
+    let url = `{{ route('booking.slots') }}?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
     if (dentistId) {
         url += `&dentist_id=${encodeURIComponent(dentistId)}`;
     }

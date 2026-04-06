@@ -1,11 +1,23 @@
 <?php
 
-use App\Http\Controllers\BookingController;
-use App\Http\Controllers\DashboardController;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\Staff\AppointmentApprovalController;
 use App\Http\Controllers\Staff\ClinicScheduleController;
+use Illuminate\Support\Facades\Route;
+
+
+
+
+
+Route::get('/available-slots', [BookingController::class, 'availableSlots'])->name('booking.slots');
+/*
+|--------------------------------------------------------------------------
+| Public Home
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/', function () {
     $clinic = \App\Models\ClinicSetting::first();
@@ -17,13 +29,14 @@ Route::get('/', function () {
     return view('public.home', compact('clinic', 'services'));
 })->name('home');
 
-
-
 /*
 |--------------------------------------------------------------------------
-| Booking
+| Booking Entry Flow
 |--------------------------------------------------------------------------
+| Guest users start at /book
+| Logged-in users can go directly to the booking form
 */
+
 Route::get('/book', [BookingController::class, 'entry'])->name('booking.entry');
 
 Route::get('/book/guest', [BookingController::class, 'guestForm'])
@@ -33,21 +46,41 @@ Route::middleware('auth')->group(function () {
     Route::get('/book/form', [BookingController::class, 'create'])->name('booking.create');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Booking Review / Submit
+|--------------------------------------------------------------------------
+*/
+
 Route::post('/book/review', [BookingController::class, 'review'])->name('booking.review');
 Route::post('/book/store', [BookingController::class, 'store'])->name('booking.store');
-
 Route::get('/book/success/{requestCode}', [BookingController::class, 'success'])->name('booking.success');
 
-Route::get('/booking/services/{service}/meta', [BookingController::class, 'serviceMeta'])->name('booking.service.meta');
-Route::get('/booking/services/{service}/questions', [BookingController::class, 'serviceQuestions'])->name('booking.service.questions');
-Route::get('/booking/available-dentists', [BookingController::class, 'availableDentists'])->name('booking.available.dentists');
-Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('booking.available.slots');
+/*
+|--------------------------------------------------------------------------
+| Booking AJAX / Dynamic Data
+|--------------------------------------------------------------------------
+| Used by booking form for service metadata, questions,
+| available dentists, and available slots
+*/
 
+Route::get('/booking/services/{service}/meta', [BookingController::class, 'serviceMeta'])
+    ->name('booking.service.meta');
 
+Route::get('/booking/services/{service}/questions', [BookingController::class, 'serviceQuestions'])
+    ->name('booking.service.questions');
 
+Route::get('/booking/available-dentists', [BookingController::class, 'availableDentists'])
+    ->name('booking.available.dentists');
 
+Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])
+    ->name('booking.available.slots');
 
-
+/*
+|--------------------------------------------------------------------------
+| Guest Authentication
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -57,24 +90,47 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Logout
+|--------------------------------------------------------------------------
+*/
+
 Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
 
-
-
+/*
+|--------------------------------------------------------------------------
+| Staff - Clinic Schedule Management
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware(['auth', 'role:staff'])->prefix('staff')->group(function () {
-    Route::get('/clinic-schedule', [ClinicScheduleController::class, 'index'])->name('staff.clinic-schedule.index');
-    Route::post('/clinic-schedule/open-date', [ClinicScheduleController::class, 'openSpecificDate'])->name('staff.clinic-schedule.open-date');
-    Route::post('/clinic-schedule/block', [ClinicScheduleController::class, 'blockDateOrTime'])->name('staff.clinic-schedule.block');
+    Route::get('/clinic-schedule', [ClinicScheduleController::class, 'index'])
+        ->name('staff.clinic-schedule.index');
+
+    Route::post('/clinic-schedule/open-date', [ClinicScheduleController::class, 'openSpecificDate'])
+        ->name('staff.clinic-schedule.open-date');
+
+    Route::post('/clinic-schedule/block', [ClinicScheduleController::class, 'blockDateOrTime'])
+        ->name('staff.clinic-schedule.block');
 });
 
+/*
+|--------------------------------------------------------------------------
+| Staff - Appointment Approval Flow
+|--------------------------------------------------------------------------
+| Staff reviews pending appointment requests and can approve or reject them
+*/
 
+Route::middleware(['auth', 'role:staff'])->prefix('staff')->group(function () {
+    Route::post('/appointments/approve', [AppointmentApprovalController::class, 'approve'])
+        ->name('staff.appointments.approve');
 
-
-
-
+    Route::post('/appointments/reject', [AppointmentApprovalController::class, 'reject'])
+        ->name('staff.appointments.reject');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -101,4 +157,3 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'patient'])->name('patient.dashboard');
     });
 });
-
