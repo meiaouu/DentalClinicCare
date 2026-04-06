@@ -15,41 +15,41 @@
         </div>
     @endif
 
+
+    <style>
+.time-slot-btn {
+    border: 1px solid #dbe3ea;
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 12px 10px;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.time-slot-btn:hover:not(.disabled) {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.time-slot-btn.active {
+    background: #0d6efd;
+    color: #ffffff;
+    border-color: #0d6efd;
+}
+
+.time-slot-btn.disabled {
+    background: #f1f3f5;
+    color: #9aa4af;
+    border-color: #e5e7eb;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+</style>
+
     <form method="POST" action="{{ route('booking.review') }}" id="bookingForm">
         @csrf
-
-        @if($isGuest)
-            <div class="card shadow-sm p-3 mb-4">
-                <h5 class="mb-3">Guest Verification</h5>
-
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Guest First Name</label>
-                        <input type="text" name="guest_first_name" class="form-control" value="{{ old('guest_first_name') }}" required>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Guest Middle Name</label>
-                        <input type="text" name="guest_middle_name" class="form-control" value="{{ old('guest_middle_name') }}">
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Guest Last Name</label>
-                        <input type="text" name="guest_last_name" class="form-control" value="{{ old('guest_last_name') }}" required>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Guest Mobile Number</label>
-                        <input type="text" name="guest_contact_number" class="form-control" placeholder="09XXXXXXXXX / 639XXXXXXXXX / +639XXXXXXXXX" value="{{ old('guest_contact_number') }}" required>
-                    </div>
-
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Guest Email</label>
-                        <input type="email" name="guest_email" class="form-control" value="{{ old('guest_email') }}">
-                    </div>
-                </div>
-            </div>
-        @endif
 
         <div class="card shadow-sm p-3 mb-4">
             <h5 class="mb-3">Patient Information</h5>
@@ -109,14 +109,14 @@
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Contact Number</label>
                     <input type="text" name="contact_number" class="form-control"
-                        placeholder="09XXXXXXXXX / 639XXXXXXXXX / +639XXXXXXXXX"
-                        value="{{ old('contact_number', $patient->contact_number ?? '') }}" required>
+    value="{{ old('contact_number', $prefillContact ?? $patient->contact_number ?? '') }}"
+    required>
                 </div>
 
                 <div class="col-md-4 mb-3">
                     <label class="form-label">Email</label>
                     <input type="email" name="email" class="form-control"
-                        value="{{ old('email', $patient->email ?? '') }}">
+                        value="{{ old('email', $patient->email ?? '') }}" required>
                 </div>
 
                 <div class="col-md-4 mb-3">
@@ -238,20 +238,52 @@
                     </div>
                 </div>
 
-                <div class="col-md-4 mb-3">
-                    <label class="form-label">Preferred Date</label>
-                    <input type="date" name="preferred_date" id="preferred_date" class="form-control"
-                        min="{{ now()->toDateString() }}"
-                        value="{{ old('preferred_date') }}"
-                        required>
-                </div>
+               <div class="col-md-6 mb-3">
+    <input type="hidden"
+           name="preferred_date"
+           id="preferred_date"
+           value="{{ old('preferred_date') }}"
+           min="{{ now()->toDateString() }}">
 
-                <div class="col-md-8 mb-3">
-                    <label class="form-label">Available Time Slots</label>
-                    <select name="preferred_start_time" id="preferred_start_time" class="form-control" required>
-                        <option value="">Select an available time slot</option>
-                    </select>
-                </div>
+    <div class="border rounded p-3 bg-light h-100">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="prevMonthBtn">&lt;</button>
+            <h6 class="mb-0" id="calendarMonthLabel">Select Date</h6>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="nextMonthBtn">&gt;</button>
+        </div>
+
+        <div class="row row-cols-7 text-center fw-bold small mb-2">
+            <div class="col">Sun</div>
+            <div class="col">Mon</div>
+            <div class="col">Tue</div>
+            <div class="col">Wed</div>
+            <div class="col">Thu</div>
+            <div class="col">Fri</div>
+            <div class="col">Sat</div>
+        </div>
+
+        <div id="bookingCalendarGrid" class="d-grid" style="grid-template-columns: repeat(7, 1fr); gap: 6px;"></div>
+
+        <div class="mt-3">
+            <strong>Selected Date:</strong>
+            <span id="selectedDateLabel">{{ old('preferred_date') ?: 'None' }}</span>
+        </div>
+    </div>
+</div>
+
+<div class="col-md-6 mb-3">
+    <div class="border rounded p-3 bg-light h-100">
+        <label class="form-label fw-bold">Available Time Slots</label>
+
+        <input type="hidden" name="preferred_start_time" id="preferred_start_time" value="{{ old('preferred_start_time') }}">
+
+<div id="timeSlotGrid" class="d-grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
+
+<div id="slotFeedback" class="small text-muted mt-3">
+    Select a service and date to load available times.
+</div>
+    </div>
+</div>
 
                 <div class="col-md-12 mb-3">
                     <label class="form-label">Notes / Concerns</label>
@@ -275,6 +307,26 @@ document.addEventListener('DOMContentLoaded', function () {
     const descriptionEl = document.getElementById('serviceMetaDescription');
     const durationEl = document.getElementById('serviceMetaDuration');
     const priceEl = document.getElementById('serviceMetaPrice');
+
+    const calendarGrid = document.getElementById('bookingCalendarGrid');
+    const calendarMonthLabel = document.getElementById('calendarMonthLabel');
+    const selectedDateLabel = document.getElementById('selectedDateLabel');
+    const prevMonthBtn = document.getElementById('prevMonthBtn');
+    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const slotFeedback = document.getElementById('slotFeedback');
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    let selectedDate = dateInput.value ? new Date(dateInput.value + 'T00:00:00') : null;
+
+    function formatDateLocal(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
 
     function updateServiceMetaFromOption() {
         const option = serviceSelect.options[serviceSelect.selectedIndex];
@@ -353,38 +405,148 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     async function loadAvailableSlots() {
-        const serviceId = serviceSelect.value;
-        const dentistId = dentistSelect.value;
-        const date = dateInput.value;
+    const serviceId = serviceSelect.value;
+    const dentistId = dentistSelect.value;
+    const date = dateInput.value;
 
-        timeSelect.innerHTML = '<option value="">Select an available time slot</option>';
+    const hiddenTimeInput = document.getElementById('preferred_start_time');
+    const timeSlotGrid = document.getElementById('timeSlotGrid');
 
-        if (!serviceId || !date) {
+    hiddenTimeInput.value = '';
+    timeSlotGrid.innerHTML = '';
+
+    if (!serviceId || !date) {
+        slotFeedback.textContent = 'Select a service and date to load available times.';
+        return;
+    }
+
+    let url = `/booking/available-slots?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
+    if (dentistId) {
+        url += `&dentist_id=${encodeURIComponent(dentistId)}`;
+    }
+
+    try {
+        slotFeedback.textContent = 'Loading available time slots...';
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error('Failed to load slots');
+        }
+
+        const result = await response.json();
+        const slots = Array.isArray(result.available_slots) ? result.available_slots : [];
+        const clinicHours = Array.isArray(result.clinic_hours) ? result.clinic_hours : [];
+
+        if (clinicHours.length === 0) {
+            slotFeedback.textContent = 'No clinic hours configured.';
+            timeSlotGrid.innerHTML = '<div class="text-danger">No clinic hours available.</div>';
             return;
         }
 
-        let url = `/booking/available-slots?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
-        if (dentistId) {
-            url += `&dentist_id=${encodeURIComponent(dentistId)}`;
-        }
+        const availableMap = {};
+        slots.forEach((slot) => {
+            availableMap[slot.start_time] = slot;
+        });
 
-        try {
-            const response = await fetch(url);
-            const slots = await response.json();
+        clinicHours.forEach((hour) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'time-slot-btn';
+            btn.textContent = formatHourLabel(hour);
 
-            if (!Array.isArray(slots) || slots.length === 0) {
-                timeSelect.innerHTML = '<option value="">No available slots</option>';
-                return;
+            if (availableMap[hour]) {
+                btn.dataset.value = hour;
+
+                btn.addEventListener('click', function () {
+                    document.querySelectorAll('.time-slot-btn').forEach(el => {
+                        el.classList.remove('active');
+                    });
+
+                    btn.classList.add('active');
+                    hiddenTimeInput.value = hour;
+                });
+            } else {
+                btn.classList.add('disabled');
+                btn.disabled = true;
             }
 
-            slots.forEach((slot) => {
-                const option = document.createElement('option');
-                option.value = slot.start_time;
-                option.textContent = slot.label;
-                timeSelect.appendChild(option);
+            timeSlotGrid.appendChild(btn);
+        });
+
+        slotFeedback.textContent = slots.length > 0
+            ? `${slots.length} available time slot(s) found.`
+            : 'No available slots for the selected date.';
+    } catch (error) {
+        console.error(error);
+        timeSlotGrid.innerHTML = '<div class="text-danger">Failed to load slots</div>';
+        slotFeedback.textContent = 'Failed to load available slots.';
+    }
+}
+
+function formatHourLabel(time24) {
+    const [hour, minute] = time24.split(':');
+    const h = parseInt(hour, 10);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const displayHour = ((h + 11) % 12 + 1).toString().padStart(2, '0');
+    return `${suffix} ${displayHour}:${minute}`;
+}
+
+    function renderCalendar() {
+        calendarGrid.innerHTML = '';
+
+        const year = currentMonth.getFullYear();
+        const month = currentMonth.getMonth();
+
+        calendarMonthLabel.textContent = currentMonth.toLocaleDateString('en-US', {
+            month: 'long',
+            year: 'numeric'
+        });
+
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startWeekday = firstDay.getDay();
+        const totalDays = lastDay.getDate();
+
+        for (let i = 0; i < startWeekday; i++) {
+            const blank = document.createElement('div');
+            calendarGrid.appendChild(blank);
+        }
+
+        for (let day = 1; day <= totalDays; day++) {
+            const cellDate = new Date(year, month, day);
+            cellDate.setHours(0, 0, 0, 0);
+
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'btn btn-sm';
+            btn.textContent = day;
+
+            const isPast = cellDate < today;
+            const isSelected = selectedDate && formatDateLocal(cellDate) === formatDateLocal(selectedDate);
+
+            if (isPast) {
+                btn.classList.add('btn-light');
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+            } else if (isSelected) {
+                btn.classList.add('btn-primary');
+            } else {
+                btn.classList.add('btn-outline-secondary');
+            }
+
+            btn.addEventListener('click', function () {
+                selectedDate = cellDate;
+                const formatted = formatDateLocal(cellDate);
+
+                dateInput.value = formatted;
+                selectedDateLabel.textContent = formatted;
+
+                renderCalendar();
+                loadAvailableSlots();
             });
-        } catch (error) {
-            timeSelect.innerHTML = '<option value="">Failed to load slots</option>';
+
+            calendarGrid.appendChild(btn);
         }
     }
 
@@ -395,11 +557,25 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     dentistSelect.addEventListener('change', loadAvailableSlots);
-    dateInput.addEventListener('change', loadAvailableSlots);
+
+    prevMonthBtn.addEventListener('click', function () {
+        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
+        renderCalendar();
+    });
+
+    nextMonthBtn.addEventListener('click', function () {
+        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+        renderCalendar();
+    });
 
     updateServiceMetaFromOption();
     loadServiceQuestions();
-    loadAvailableSlots();
+    renderCalendar();
+
+    if (dateInput.value) {
+        selectedDateLabel.textContent = dateInput.value;
+        loadAvailableSlots();
+    }
 });
 </script>
 @endsection

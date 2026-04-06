@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Staff\ClinicScheduleController;
 
 Route::get('/', function () {
     $clinic = \App\Models\ClinicSetting::first();
@@ -25,9 +26,8 @@ Route::get('/', function () {
 */
 Route::get('/book', [BookingController::class, 'entry'])->name('booking.entry');
 
-Route::middleware('guest')->group(function () {
-    Route::get('/book/guest', [BookingController::class, 'guestForm'])->name('booking.guest.form');
-});
+Route::get('/book/guest', [BookingController::class, 'guestForm'])
+    ->name('booking.guest.form');
 
 Route::middleware('auth')->group(function () {
     Route::get('/book/form', [BookingController::class, 'create'])->name('booking.create');
@@ -64,8 +64,11 @@ Route::post('/logout', [LoginController::class, 'logout'])
 
 
 
-
-
+Route::middleware(['auth', 'role:staff'])->prefix('staff')->group(function () {
+    Route::get('/clinic-schedule', [ClinicScheduleController::class, 'index'])->name('staff.clinic-schedule.index');
+    Route::post('/clinic-schedule/open-date', [ClinicScheduleController::class, 'openSpecificDate'])->name('staff.clinic-schedule.open-date');
+    Route::post('/clinic-schedule/block', [ClinicScheduleController::class, 'blockDateOrTime'])->name('staff.clinic-schedule.block');
+});
 
 
 

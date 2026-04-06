@@ -5,13 +5,7 @@
     <h2 class="mb-4">Booking Review</h2>
 
     <div class="card shadow-sm p-4">
-        @if($isGuest)
-            <h5>Guest Details</h5>
-            <p><strong>Name:</strong> {{ $data['guest_first_name'] }} {{ $data['guest_middle_name'] ?? '' }} {{ $data['guest_last_name'] }}</p>
-            <p><strong>Mobile:</strong> {{ $data['guest_contact_number'] }}</p>
-            <p><strong>Email:</strong> {{ $data['guest_email'] ?? 'N/A' }}</p>
-            <hr>
-        @endif
+   
 
         <h5>Patient Information</h5>
         <p><strong>Name:</strong> {{ $data['first_name'] }} {{ $data['middle_name'] ?? '' }} {{ $data['last_name'] }}</p>

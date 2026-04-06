@@ -5,7 +5,6 @@ namespace App\Http\Requests;
 use App\Models\Service;
 use App\Services\Booking\PhoneNumberService;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Validator;
 
 class BookingReviewRequest extends FormRequest
@@ -17,7 +16,7 @@ class BookingReviewRequest extends FormRequest
 
     public function rules(): array
     {
-        $rules = [
+        return [
             'service_id' => ['required', 'integer', 'exists:services,service_id'],
             'preferred_dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
             'preferred_date' => ['required', 'date', 'after_or_equal:today'],
@@ -37,6 +36,8 @@ class BookingReviewRequest extends FormRequest
             'birth_date' => ['required', 'date', 'before:today'],
             'civil_status' => ['required', 'string', 'max:50'],
             'occupation' => ['nullable', 'string', 'max:100'],
+
+            'contact_number' => ['required', 'string', 'max:20'],
             'email' => ['nullable', 'email', 'max:150'],
             'emergency_contact_name' => ['nullable', 'string', 'max:150'],
             'emergency_contact_number' => ['nullable', 'string', 'max:20'],
@@ -44,18 +45,6 @@ class BookingReviewRequest extends FormRequest
             'answers' => ['nullable', 'array'],
             'answers.*' => ['nullable'],
         ];
-
-        if (Auth::check()) {
-            $rules['contact_number'] = ['required', 'string', 'max:20'];
-        } else {
-            $rules['guest_first_name'] = ['required', 'string', 'max:100'];
-            $rules['guest_middle_name'] = ['nullable', 'string', 'max:100'];
-            $rules['guest_last_name'] = ['required', 'string', 'max:100'];
-            $rules['guest_contact_number'] = ['required', 'string', 'max:20'];
-            $rules['guest_email'] = ['nullable', 'email', 'max:150'];
-        }
-
-        return $rules;
     }
 
     public function messages(): array
@@ -63,6 +52,7 @@ class BookingReviewRequest extends FormRequest
         return [
             'preferred_date.after_or_equal' => 'The appointment date must not be in the past.',
             'preferred_start_time.date_format' => 'The appointment time must be in valid 24-hour format.',
+            'contact_number.required' => 'Contact number is required.',
         ];
     }
 
@@ -74,10 +64,6 @@ class BookingReviewRequest extends FormRequest
             try {
                 if ($this->filled('contact_number')) {
                     $phoneService->normalizePhilippineMobile((string) $this->input('contact_number'));
-                }
-
-                if ($this->filled('guest_contact_number')) {
-                    $phoneService->normalizePhilippineMobile((string) $this->input('guest_contact_number'));
                 }
 
                 if ($this->filled('emergency_contact_number')) {

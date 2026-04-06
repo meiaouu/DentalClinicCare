@@ -14,7 +14,7 @@ class ClinicSettingSeeder extends Seeder
             [
                 'clinic_name' => 'Dental Clinic Care',
                 'open_time' => '08:00:00',
-                'close_time' => '17:00:00',
+                'close_time' => '18:00:00',
                 'slot_interval_minutes' => 30,
                 'default_no_show_minutes' => 30,
                 'allow_patient_cancel_pending' => true,

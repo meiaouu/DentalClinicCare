@@ -40,24 +40,37 @@ class BookingController extends Controller
         return view('public.booking.entry');
     }
 
-    public function guestForm(): View
-    {
-        $services = Service::query()
-            ->where('is_active', 1)
-            ->orderBy('service_name')
-            ->get();
 
-        $dentists = Dentist::query()
-            ->where('is_active', 1)
-            ->get();
 
-        return view('public.booking.form', [
-            'services' => $services,
-            'dentists' => $dentists,
-            'isGuest' => true,
-            'patient' => null,
-        ]);
+    public function guestForm(Request $request)
+{
+    $contact = $request->query('contact_number');
+
+    // Validate early
+    if (!$contact) {
+        return redirect()->route('booking.entry')
+            ->withErrors(['contact_number' => 'Mobile number is required']);
     }
+
+    try {
+        $normalized = $this->phoneNumberService
+            ->normalizePhilippineMobile($contact);
+    } catch (\Exception $e) {
+        return redirect()->route('booking.entry')
+            ->withErrors(['contact_number' => $e->getMessage()]);
+    }
+
+    $services = Service::where('is_active', 1)->get();
+    $dentists = Dentist::where('is_active', 1)->get();
+
+    return view('public.booking.form', [
+        'services' => $services,
+        'dentists' => $dentists,
+        'isGuest' => true,
+        'patient' => null,
+        'prefillContact' => $normalized,
+    ]);
+}
 
     public function create(): View
     {
@@ -270,22 +283,23 @@ class BookingController extends Controller
         );
     }
 
-    public function availableSlots(Request $request): JsonResponse
-    {
-        $validated = $request->validate([
-            'date' => ['required', 'date'],
-            'service_id' => ['required', 'integer', 'exists:services,service_id'],
-            'dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
-        ]);
+public function availableSlots(Request $request): \Illuminate\Http\JsonResponse
+{
+    $validated = $request->validate([
+        'date' => ['required', 'date'],
+        'service_id' => ['required', 'integer', 'exists:services,service_id'],
+        'dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
+    ]);
 
-        return response()->json(
-            $this->availabilityService->getAvailableSlots(
-                $validated['date'],
-                (int) $validated['service_id'],
-                !empty($validated['dentist_id']) ? (int) $validated['dentist_id'] : null
-            )
-        );
-    }
+    return response()->json([
+        'clinic_hours' => $this->availabilityService->getClinicHoursForDate($validated['date']),
+        'available_slots' => $this->availabilityService->getAvailableSlots(
+            $validated['date'],
+            (int) $validated['service_id'],
+            !empty($validated['dentist_id']) ? (int) $validated['dentist_id'] : null
+        ),
+    ]);
+}
 
     protected function buildNotesPayload(array $data): string
     {

@@ -1,28 +1,31 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-4">
-    <h2 class="mb-4">Book Appointment</h2>
+<div class="container py-5">
+    <div class="card shadow-sm p-4 mx-auto" style="max-width: 500px;">
+        <h4 class="mb-3 text-center">Book Appointment</h4>
 
-    @if(session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
-    @endif
+        <form method="GET" action="{{ route('booking.guest.form') }}">
+            <div class="mb-3">
+                <label class="form-label">Mobile Number</label>
+                <input type="text"
+                       name="contact_number"
+                       class="form-control"
+                       placeholder="09XXXXXXXXX / 639XXXXXXXXX / +639XXXXXXXXX"
+                       required>
+            </div>
 
-    <div class="card shadow-sm p-4">
-        <p class="mb-3">Choose how you want to continue:</p>
+            <button type="submit" class="btn btn-primary w-100 mb-3">
+                Book Now
+            </button>
+        </form>
 
-        <div class="d-grid gap-2">
-            <a href="{{ route('booking.guest.form') }}" class="btn btn-primary">
-                Book Now as Guest
-            </a>
-
-            <a href="{{ route('login', ['redirect' => route('booking.create')]) }}" class="btn btn-outline-secondary">
-                Login
-            </a>
-
-            <a href="{{ route('register', ['redirect' => route('booking.create')]) }}" class="btn btn-outline-success">
-                Register
-            </a>
+        <div class="text-center">
+            <small>
+                Already have an account?
+                <a href="{{ route('login') }}">Login</a> or
+                <a href="{{ route('register') }}">Register</a>
+            </small>
         </div>
     </div>
 </div>
