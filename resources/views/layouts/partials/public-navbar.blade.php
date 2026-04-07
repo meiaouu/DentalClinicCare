@@ -19,7 +19,7 @@
         <div style="max-width:1100px; margin:0 auto; padding:18px 16px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap;">
             <a href="{{ route('home') }}" style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:22px; color:#0f172a;">
                 <span style="display:inline-flex; width:30px; height:30px; border-radius:6px; background:#0f172a; color:white; align-items:center; justify-content:center; font-size:12px;">D</span>
-                <span>Dentrix.</span>
+                <span>Dr Brendalyn Wansi Calacat</span>
             </a>
 
             <nav style="display:flex; flex-wrap:wrap; gap:22px; font-size:14px; font-weight:600;">
@@ -27,7 +27,6 @@
                 <a href="#services" style="color:#334155;">Services</a>
                 <a href="#gallery" style="color:#334155;">Gallery</a>
                 <a href="#about" style="color:#334155;">About Clinic</a>
-                <a href="#contact" style="color:#334155;">Contact</a>
                 <a href="#chat" style="color:#334155;">Chat</a>
 
                 @if (auth()->check())
@@ -46,3 +45,6 @@
         </div>
     </div>
 </header>
+
+
+

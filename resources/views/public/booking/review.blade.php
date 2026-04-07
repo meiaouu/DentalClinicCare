@@ -5,7 +5,7 @@
     <h2 class="mb-4">Booking Review</h2>
 
     <div class="card shadow-sm p-4">
-   
+
 
         <h5>Patient Information</h5>
         <p><strong>Name:</strong> {{ $data['first_name'] }} {{ $data['middle_name'] ?? '' }} {{ $data['last_name'] }}</p>

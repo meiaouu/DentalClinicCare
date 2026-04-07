@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Appointment extends Model
 {
@@ -21,6 +23,9 @@ class Appointment extends Model
         'estimated_duration_minutes',
         'estimated_price',
         'status',
+        'grace_period_minutes',
+        'queue_number',
+        'arrival_status',
         'booked_by',
         'confirmed_by',
         'cancelled_by',
@@ -30,6 +35,22 @@ class Appointment extends Model
         'no_show_at',
         'remarks',
     ];
+
+     protected function casts(): array
+    {
+        return [
+            'appointment_date' => 'date',
+            'estimated_duration_minutes' => 'integer',
+            'estimated_price' => 'decimal:2',
+            'grace_period_minutes' => 'integer',
+            'queue_number' => 'integer',
+        ];
+    }
+
+     public function request(): BelongsTo
+    {
+        return $this->belongsTo(AppointmentRequest::class, 'request_id', 'request_id');
+    }
 
     public function dentist()
     {
@@ -45,4 +66,11 @@ class Appointment extends Model
     {
         return $this->belongsTo(Patient::class, 'patient_id', 'patient_id');
     }
+
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(AppointmentStatusLog::class, 'appointment_id', 'appointment_id');
+    }
+
+
 }

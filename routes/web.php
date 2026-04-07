@@ -6,6 +6,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Staff\AppointmentApprovalController;
 use App\Http\Controllers\Staff\ClinicScheduleController;
+use App\Http\Controllers\Staff\AppointmentRequestReviewController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -147,6 +148,24 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('staff')->middleware('role:staff')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'staff'])->name('staff.dashboard');
+
+    Route::get('/appointment-requests', [AppointmentRequestReviewController::class, 'index'])
+        ->name('staff.appointment-requests.index');
+
+    Route::get('/appointment-requests/{requestId}', [AppointmentRequestReviewController::class, 'show'])
+        ->name('staff.appointment-requests.show');
+
+    Route::post('/appointment-requests/{requestId}/confirm', [AppointmentRequestReviewController::class, 'confirm'])
+        ->name('staff.appointment-requests.confirm');
+
+    Route::post('/appointment-requests/{requestId}/reject', [AppointmentRequestReviewController::class, 'reject'])
+        ->name('staff.appointment-requests.reject');
+
+    Route::post('/appointment-requests/{requestId}/reschedule', [AppointmentRequestReviewController::class, 'reschedule'])
+        ->name('staff.appointment-requests.reschedule');
+
+
+
     });
 
     Route::prefix('dentist')->middleware('role:dentist')->group(function () {
