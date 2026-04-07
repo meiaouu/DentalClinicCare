@@ -33,18 +33,15 @@ return new class extends Migration
         Schema::table('appointment_requests', function (Blueprint $table) {
             if (Schema::hasColumn('appointment_requests', 'reviewed_by_user_id')) {
                 $table->dropForeign(['reviewed_by_user_id']);
-            }
-
-            if (Schema::hasColumn('appointment_requests', 'review_notes')) {
-                $table->dropColumn('review_notes');
+                $table->dropColumn('reviewed_by_user_id');
             }
 
             if (Schema::hasColumn('appointment_requests', 'reviewed_at')) {
                 $table->dropColumn('reviewed_at');
             }
 
-            if (Schema::hasColumn('appointment_requests', 'reviewed_by_user_id')) {
-                $table->dropColumn('reviewed_by_user_id');
+            if (Schema::hasColumn('appointment_requests', 'review_notes')) {
+                $table->dropColumn('review_notes');
             }
         });
     }

@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('appointment_status_logs', function (Blueprint $table) {
             $table->id('log_id');
-
             $table->unsignedBigInteger('appointment_id');
             $table->string('old_status', 50)->nullable();
             $table->string('new_status', 50);

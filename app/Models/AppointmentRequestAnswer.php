@@ -30,4 +30,5 @@ class AppointmentRequestAnswer extends Model
     {
         return $this->belongsTo(ServiceOptionValue::class, 'selected_value_id', 'value_id');
     }
+
 }

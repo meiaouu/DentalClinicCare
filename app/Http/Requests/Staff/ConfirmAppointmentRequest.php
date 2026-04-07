@@ -3,13 +3,12 @@
 namespace App\Http\Requests\Staff;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Support\Facades\Auth;
 
 class ConfirmAppointmentRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return Auth::check();
+        return true;
     }
 
     public function rules(): array
@@ -18,7 +17,7 @@ class ConfirmAppointmentRequest extends FormRequest
             'dentist_id' => ['required', 'exists:dentists,dentist_id'],
             'appointment_date' => ['required', 'date'],
             'start_time' => ['required', 'date_format:H:i'],
-            'staff_notes' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string'],
         ];
     }
 }

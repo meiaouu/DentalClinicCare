@@ -12,7 +12,7 @@
 
     .booking-wrap {
         max-width: 1180px;
-        margin: 0 auto;php
+        margin: 0 auto;
     }
 
     .booking-header {
@@ -344,39 +344,49 @@
                 </div>
 
                 <div class="section-card">
-                    <h5 class="section-title">Address</h5>
+    <h5 class="section-title">Address</h5>
 
-                    <div class="row">
-                        <div>
-    <label>Region</label>
-    <select name="region" id="region" style="width:100%; padding:12px;">
-        <option value="">Select Region</option>
-        <option value="NCR">NCR</option>
-        <option value="Region III">Region III</option>
-    </select>
+    <div class="row">
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Region</label>
+            <select name="region" id="region" class="form-select" required>
+                <option value="">Select Region</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Province</label>
+            <select name="province" id="province" class="form-select" required disabled>
+                <option value="">Select Province</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <label class="form-label">City / Municipality</label>
+            <select name="city" id="city" class="form-select" required disabled>
+                <option value="">Select City / Municipality</option>
+            </select>
+        </div>
+
+        <div class="col-md-3 mb-3">
+            <label class="form-label">Barangay</label>
+            <select name="barangay" id="barangay" class="form-select" required disabled>
+                <option value="">Select Barangay</option>
+            </select>
+        </div>
+
+        <div class="col-md-12 mb-0">
+            <label class="form-label">Street / House No. / Unit</label>
+            <input
+                type="text"
+                name="address_line"
+                class="form-control"
+                value="{{ old('address_line') }}"
+                placeholder="Street / House No. / Unit"
+            >
+        </div>
+    </div>
 </div>
-
-<div>
-    <label>Province</label>
-    <select name="province" id="province"></select>
-</div>
-
-<div>
-    <label>City</label>
-    <select name="city" id="city"></select>
-</div>
-
-<div>
-    <label>Barangay</label>
-    <select name="barangay" id="barangay"></select>
-</div>
-
-                        <div class="col-md-12 mb-0">
-                            <label class="form-label">Street / House No. / Unit</label>
-                            <input type="text" name="address_line" class="form-control" value="{{ old('address_line') }}">
-                        </div>
-                    </div>
-                </div>
 
                 <div class="section-card">
                     <h5 class="section-title">Appointment Details</h5>
@@ -482,6 +492,22 @@
     </div>
 </div>
 
+
+<div
+    id="addressOldValues"
+    data-region="{{ old('region', '') }}"
+    data-province="{{ old('province', '') }}"
+    data-city="{{ old('city', '') }}"
+    data-barangay="{{ old('barangay', '') }}"
+    hidden
+></div>
+
+
+
+
+
+
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const serviceSelect = document.getElementById('service_id');
@@ -500,6 +526,40 @@ document.addEventListener('DOMContentLoaded', function () {
     const nextMonthBtn = document.getElementById('nextMonthBtn');
     const slotFeedback = document.getElementById('slotFeedback');
 
+    const hiddenTimeInput = document.getElementById('preferred_start_time');
+    const timeSlotGrid = document.getElementById('timeSlotGrid');
+
+    const regionEl = document.getElementById('region');
+    const provinceEl = document.getElementById('province');
+    const cityEl = document.getElementById('city');
+    const barangayEl = document.getElementById('barangay');
+
+   const oldValuesEl = document.getElementById('addressOldValues');
+
+const oldRegion = oldValuesEl?.dataset.region || '';
+const oldProvince = oldValuesEl?.dataset.province || '';
+const oldCity = oldValuesEl?.dataset.city || '';
+const oldBarangay = oldValuesEl?.dataset.barangay || '';
+
+    const addressData = {
+        "NCR": {
+            "Metro Manila": {
+                "Quezon City": ["Bagumbayan", "Commonwealth", "Batasan Hills"],
+                "Manila": ["Ermita", "Malate", "Sampaloc"]
+            }
+        },
+        "Region III": {
+            "Bulacan": {
+                "Malolos": ["Santo Rosario", "Longos", "Tikay"],
+                "San Jose del Monte": ["Minuyan", "Muzon", "Tungkong Mangga"]
+            },
+            "Pampanga": {
+                "Angeles City": ["Balibago", "Pulung Maragul", "Anunas"],
+                "San Fernando": ["Del Pilar", "Juliana", "Sto. Niño"]
+            }
+        }
+    };
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -511,6 +571,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    function normalizeTime(value) {
+        if (!value) return '';
+        return value.length === 5 ? value + ':00' : value;
     }
 
     function updateServiceMetaFromOption() {
@@ -594,9 +659,6 @@ document.addEventListener('DOMContentLoaded', function () {
         const dentistId = dentistSelect.value;
         const date = dateInput.value;
 
-        const hiddenTimeInput = document.getElementById('preferred_start_time');
-        const timeSlotGrid = document.getElementById('timeSlotGrid');
-
         hiddenTimeInput.value = '';
         timeSlotGrid.innerHTML = '';
 
@@ -631,17 +693,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const availableMap = {};
             slots.forEach((slot) => {
-                availableMap[slot.start_time] = slot;
+                availableMap[normalizeTime(slot.start_time)] = slot;
             });
 
             clinicHours.forEach((hour) => {
+                const normalizedHour = normalizeTime(hour);
+
                 const btn = document.createElement('button');
                 btn.type = 'button';
                 btn.className = 'time-slot-btn';
-                btn.textContent = formatHourLabel(hour);
+                btn.textContent = formatHourLabel(normalizedHour);
 
-                if (availableMap[hour]) {
-                    btn.dataset.value = hour;
+                if (availableMap[normalizedHour]) {
+                    btn.dataset.value = normalizedHour;
 
                     btn.addEventListener('click', function () {
                         document.querySelectorAll('.time-slot-btn').forEach(el => {
@@ -649,7 +713,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         });
 
                         btn.classList.add('active');
-                        hiddenTimeInput.value = hour;
+                        hiddenTimeInput.value = normalizedHour;
                     });
                 } else {
                     btn.classList.add('disabled');
@@ -735,6 +799,77 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function resetSelect(selectEl, placeholder) {
+        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+        selectEl.disabled = true;
+    }
+
+    function populateSelect(selectEl, items, placeholder, selectedValue = '') {
+        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+
+        items.forEach(item => {
+            const option = document.createElement('option');
+            option.value = item;
+            option.textContent = item;
+
+            if (selectedValue && selectedValue === item) {
+                option.selected = true;
+            }
+
+            selectEl.appendChild(option);
+        });
+
+        selectEl.disabled = items.length === 0;
+    }
+
+    function loadRegions() {
+        populateSelect(regionEl, Object.keys(addressData), 'Select Region', oldRegion);
+    }
+
+    function loadProvinces(region, selectedProvince = '') {
+        resetSelect(cityEl, 'Select City / Municipality');
+        resetSelect(barangayEl, 'Select Barangay');
+
+        if (!region || !addressData[region]) {
+            resetSelect(provinceEl, 'Select Province');
+            return;
+        }
+
+        populateSelect(provinceEl, Object.keys(addressData[region]), 'Select Province', selectedProvince);
+    }
+
+    function loadCities(region, province, selectedCity = '') {
+        resetSelect(barangayEl, 'Select Barangay');
+
+        if (!region || !province || !addressData[region]?.[province]) {
+            resetSelect(cityEl, 'Select City / Municipality');
+            return;
+        }
+
+        populateSelect(cityEl, Object.keys(addressData[region][province]), 'Select City / Municipality', selectedCity);
+    }
+
+    function loadBarangays(region, province, city, selectedBarangay = '') {
+        if (!region || !province || !city || !addressData[region]?.[province]?.[city]) {
+            resetSelect(barangayEl, 'Select Barangay');
+            return;
+        }
+
+        populateSelect(barangayEl, addressData[region][province][city], 'Select Barangay', selectedBarangay);
+    }
+
+    regionEl.addEventListener('change', function () {
+        loadProvinces(this.value);
+    });
+
+    provinceEl.addEventListener('change', function () {
+        loadCities(regionEl.value, this.value);
+    });
+
+    cityEl.addEventListener('change', function () {
+        loadBarangays(regionEl.value, provinceEl.value, this.value);
+    });
+
     serviceSelect.addEventListener('change', function () {
         updateServiceMetaFromOption();
         loadServiceQuestions();
@@ -757,35 +892,30 @@ document.addEventListener('DOMContentLoaded', function () {
     loadServiceQuestions();
     renderCalendar();
 
+    loadRegions();
+
+    if (oldRegion) {
+        loadProvinces(oldRegion, oldProvince);
+    } else {
+        resetSelect(provinceEl, 'Select Province');
+    }
+
+    if (oldRegion && oldProvince) {
+        loadCities(oldRegion, oldProvince, oldCity);
+    } else {
+        resetSelect(cityEl, 'Select City / Municipality');
+    }
+
+    if (oldRegion && oldProvince && oldCity) {
+        loadBarangays(oldRegion, oldProvince, oldCity, oldBarangay);
+    } else {
+        resetSelect(barangayEl, 'Select Barangay');
+    }
+
     if (dateInput.value) {
         selectedDateLabel.textContent = dateInput.value;
         loadAvailableSlots();
     }
-});
-
-
-
-
-const data = {
-    "NCR": {
-        "Metro Manila": {
-            "Quezon City": ["Bagumbayan", "Commonwealth"]
-        }
-    },
-    "Region III": {
-        "Bulacan": {
-            "Malolos": ["Santo Rosario"]
-        }
-    }
-};
-
-document.getElementById('region').addEventListener('change', function () {
-    const province = document.getElementById('province');
-    province.innerHTML = '<option>Select</option>';
-
-    Object.keys(data[this.value] || {}).forEach(p => {
-        province.innerHTML += `<option value="${p}">${p}</option>`;
-    });
 });
 </script>
 @endsection

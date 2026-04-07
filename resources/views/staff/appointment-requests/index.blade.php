@@ -1,45 +1,43 @@
 @extends('layouts.app')
 
 @section('content')
-    <div style="max-width:1200px; margin:40px auto; padding:0 20px;">
-        <h1 style="font-size:32px; font-weight:800; margin-bottom:20px;">Appointment Request Queue</h1>
+    <div style="padding:32px;">
+        <h1 style="font-size:28px; font-weight:800; margin-bottom:20px;">Appointment Request Queue</h1>
 
-        <div style="margin-bottom:20px; display:flex; gap:10px; flex-wrap:wrap;">
-            @foreach (['pending', 'under_review', 'rescheduled', 'rejected', 'converted_to_appointment', 'all'] as $filter)
-                <a href="{{ route('staff.appointment-requests.index', ['status' => $filter]) }}"
-                   style="padding:10px 16px; border-radius:999px; border:1px solid #cbd5e1; color:#0f172a; text-decoration:none;">
-                    {{ ucfirst(str_replace('_', ' ', $filter)) }}
-                </a>
-            @endforeach
-        </div>
+        @if(session('success'))
+            <div style="background:#dcfce7; color:#166534; padding:12px 16px; border-radius:12px; margin-bottom:20px;">
+                {{ session('success') }}
+            </div>
+        @endif
 
-        <div style="background:white; border-radius:20px; padding:20px; box-shadow:0 8px 20px rgba(0,0,0,0.05);">
-            @forelse ($requests as $request)
-                <div style="padding:18px 0; border-bottom:1px solid #e2e8f0;">
-                    <div style="display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap;">
-                        <div>
-                            <div style="font-weight:700;">{{ $request->request_code }}</div>
-                            <div>{{ $request->guest_first_name }} {{ $request->guest_last_name }}</div>
-                            <div style="color:#475569;">{{ $request->service?->service_name }}</div>
-                            <div style="color:#475569;">{{ $request->preferred_date?->format('Y-m-d') }} {{ $request->preferred_start_time }}</div>
-                            <div style="color:#475569;">Status: {{ $request->request_status }}</div>
-                        </div>
+        <div style="display:grid; gap:16px;">
+            @forelse($requests as $request)
+                <div style="background:white; border:1px solid #e2e8f0; border-radius:16px; padding:20px;">
+                    <p><strong>Request Code:</strong> {{ $request->request_code }}</p>
+                    <p><strong>Patient:</strong>
+                        {{ $request->patient?->first_name
+                            ? $request->patient->first_name . ' ' . $request->patient->last_name
+                            : trim(($request->guest_first_name ?? '') . ' ' . ($request->guest_last_name ?? '')) }}
+                    </p>
+                    <p><strong>Service:</strong> {{ $request->service?->service_name }}</p>
+                    <p><strong>Date:</strong> {{ $request->preferred_date }}</p>
+                    <p><strong>Time:</strong> {{ $request->preferred_start_time }}</p>
+                    <p><strong>Status:</strong> {{ ucfirst(str_replace('_', ' ', $request->request_status)) }}</p>
 
-                        <div>
-                            <a href="{{ route('staff.appointment-requests.show', $request->request_id) }}"
-                               style="padding:10px 16px; background:#2563eb; color:white; border-radius:999px; text-decoration:none;">
-                                Review
-                            </a>
-                        </div>
+                    <div style="margin-top:12px;">
+                        <a href="{{ route('staff.appointment-requests.show', $request->request_id) }}"
+                           style="display:inline-block; padding:10px 16px; background:#2563eb; color:white; border-radius:999px; text-decoration:none;">
+                            Review Request
+                        </a>
                     </div>
                 </div>
             @empty
-                <p>No appointment requests found.</p>
+                <p>No pending appointment requests.</p>
             @endforelse
+        </div>
 
-            <div style="margin-top:20px;">
-                {{ $requests->links() }}
-            </div>
+        <div style="margin-top:20px;">
+            {{ $requests->links() }}
         </div>
     </div>
 @endsection

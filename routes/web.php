@@ -8,6 +8,7 @@ use App\Http\Controllers\Staff\AppointmentApprovalController;
 use App\Http\Controllers\Staff\ClinicScheduleController;
 use App\Http\Controllers\Staff\AppointmentRequestReviewController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Staff\AppointmentRequestController;
 
 
 
@@ -132,6 +133,36 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->group(function () {
     Route::post('/appointments/reject', [AppointmentApprovalController::class, 'reject'])
         ->name('staff.appointments.reject');
 });
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Staff - Appointment Request Controllers
+|--------------------------------------------------------------------------
+|
+*/
+
+Route::prefix('staff')->middleware('role:staff')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'staff'])->name('staff.dashboard');
+
+    Route::get('/appointment-requests', [AppointmentRequestController::class, 'index'])->name('staff.appointment-requests.index');
+    Route::get('/appointment-requests/{appointmentRequest}', [AppointmentRequestController::class, 'show'])->name('staff.appointment-requests.show');
+    Route::post('/appointment-requests/{appointmentRequest}/confirm', [AppointmentRequestController::class, 'confirm'])->name('staff.appointment-requests.confirm');
+    Route::post('/appointment-requests/{appointmentRequest}/reject', [AppointmentRequestController::class, 'reject'])->name('staff.appointment-requests.reject');
+    Route::post('/appointment-requests/{appointmentRequest}/reschedule', [AppointmentRequestController::class, 'reschedule'])->name('staff.appointment-requests.reschedule');
+});
+
+
+
+
+
+
+
+
+
+
 
 /*
 |--------------------------------------------------------------------------

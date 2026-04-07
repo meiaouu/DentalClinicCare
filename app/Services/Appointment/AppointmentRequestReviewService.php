@@ -10,12 +10,14 @@ use App\Models\Service;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 class AppointmentRequestReviewService
 {
     public function __construct(
-        protected AppointmentAvailabilityService $availabilityService
+        protected AppointmentAvailabilityService $availabilityService,
+        protected ReminderGenerationService $reminderGenerationService
     ) {
     }
 
@@ -26,45 +28,58 @@ class AppointmentRequestReviewService
         string $startTime,
         ?string $staffNotes = null
     ): Appointment {
-        if (!in_array($requestModel->request_status, ['pending', 'under_review', 'rescheduled'], true)) {
-            throw new RuntimeException('Only pending, under review, or rescheduled requests can be confirmed.');
+        if ($requestModel->request_status === 'converted_to_appointment') {
+            throw new RuntimeException('Request already converted.');
         }
 
-        return DB::transaction(function () use ($requestModel, $dentistId, $appointmentDate, $startTime, $staffNotes) {
-            $requestModel->refresh();
+        if (!in_array($requestModel->request_status, ['pending', 'under_review'], true)) {
+            throw new RuntimeException('Request cannot be confirmed.');
+        }
 
-            [$isAvailable, $errorMessage] = $this->availabilityService->validateRequest(
-                serviceId: (int) $requestModel->service_id,
-                preferredDentistId: $dentistId,
-                date: $appointmentDate,
-                startTime: $startTime
-            );
+        $service = Service::findOrFail($requestModel->service_id);
 
-            if (!$isAvailable) {
-                throw new RuntimeException($errorMessage ?: 'Selected slot is not available.');
-            }
+        [$ok, $message] = $this->availabilityService->validateRequest(
+            serviceId: (int) $requestModel->service_id,
+            preferredDentistId: $dentistId,
+            date: $appointmentDate,
+            startTime: $startTime
+        );
 
-            $service = Service::findOrFail($requestModel->service_id);
-            $clinic = ClinicSetting::first();
+        if (!$ok) {
+            throw new RuntimeException($message ?: 'Time slot not available.');
+        }
 
-            $start = Carbon::parse($appointmentDate . ' ' . $startTime);
-            $end = (clone $start)->addMinutes((int) $service->estimated_duration_minutes);
+        $start = Carbon::parse($appointmentDate . ' ' . $startTime);
+        $end = $start->copy()->addMinutes((int) $service->estimated_duration_minutes);
 
-            $oldStatus = $requestModel->request_status;
+        return DB::transaction(function () use (
+            $requestModel,
+            $dentistId,
+            $appointmentDate,
+            $start,
+            $end,
+            $service,
+            $staffNotes
+        ) {
+            $userId = Auth::id();
+            $clinicSetting = ClinicSetting::query()->first();
 
             $appointment = Appointment::create([
+                'appointment_code' => 'APT-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(5)),
                 'request_id' => $requestModel->request_id,
-                'patient_id' => $requestModel->patient_id,
                 'dentist_id' => $dentistId,
+                'patient_id' => $requestModel->patient_id,
                 'service_id' => $requestModel->service_id,
                 'appointment_date' => $appointmentDate,
                 'start_time' => $start->format('H:i:s'),
                 'end_time' => $end->format('H:i:s'),
                 'estimated_duration_minutes' => (int) $service->estimated_duration_minutes,
-                'estimated_price' => (float) $service->estimated_price,
+                'estimated_price' => $service->estimated_price,
                 'status' => 'confirmed',
-                'grace_period_minutes' => $clinic?->default_no_show_minutes ?? 30,
-                'notes' => $requestModel->notes,
+                'grace_period_minutes' => $clinicSetting?->default_no_show_minutes ?? 30,
+                'booked_by' => $userId,
+                'confirmed_by' => $userId,
+                'remarks' => $staffNotes,
             ]);
 
             $requestModel->update([
@@ -72,60 +87,40 @@ class AppointmentRequestReviewService
                 'preferred_date' => $appointmentDate,
                 'preferred_start_time' => $start->format('H:i:s'),
                 'request_status' => 'converted_to_appointment',
-                'reviewed_by_user_id' => Auth::id(),
+                'reviewed_by_user_id' => $userId,
                 'reviewed_at' => now(),
-                'converted_appointment_id' => $appointment->appointment_id,
-                'staff_notes' => $staffNotes,
+                'review_notes' => $staffNotes,
             ]);
 
             AppointmentStatusLog::create([
-                'request_id' => $requestModel->request_id,
-                'changed_by_user_id' => Auth::id(),
-                'entity_type' => 'request',
-                'from_status' => $oldStatus,
-                'to_status' => 'converted_to_appointment',
-                'remarks' => $staffNotes,
-            ]);
-
-            AppointmentStatusLog::create([
-                'request_id' => $requestModel->request_id,
                 'appointment_id' => $appointment->appointment_id,
-                'changed_by_user_id' => Auth::id(),
-                'entity_type' => 'appointment',
-                'from_status' => null,
-                'to_status' => 'confirmed',
-                'remarks' => 'Appointment created from request confirmation.',
+                'old_status' => null,
+                'new_status' => 'confirmed',
+                'changed_by' => $userId,
+                'remarks' => 'Converted from request #' . $requestModel->request_id,
+                'changed_at' => now(),
             ]);
+
+            $this->reminderGenerationService->generateForAppointment($appointment);
 
             return $appointment;
         });
     }
 
-    public function reject(AppointmentRequest $requestModel, string $staffNotes): void
-    {
-        if (!in_array($requestModel->request_status, ['pending', 'under_review', 'rescheduled'], true)) {
-            throw new RuntimeException('Only reviewable requests can be rejected.');
+    public function reject(
+        AppointmentRequest $requestModel,
+        ?string $staffNotes = null
+    ): void {
+        if (!in_array($requestModel->request_status, ['pending', 'under_review'], true)) {
+            throw new RuntimeException('Request cannot be rejected.');
         }
 
-        DB::transaction(function () use ($requestModel, $staffNotes) {
-            $oldStatus = $requestModel->request_status;
-
-            $requestModel->update([
-                'request_status' => 'rejected',
-                'reviewed_by_user_id' => Auth::id(),
-                'reviewed_at' => now(),
-                'staff_notes' => $staffNotes,
-            ]);
-
-            AppointmentStatusLog::create([
-                'request_id' => $requestModel->request_id,
-                'changed_by_user_id' => Auth::id(),
-                'entity_type' => 'request',
-                'from_status' => $oldStatus,
-                'to_status' => 'rejected',
-                'remarks' => $staffNotes,
-            ]);
-        });
+        $requestModel->update([
+            'request_status' => 'rejected',
+            'reviewed_by_user_id' => Auth::id(),
+            'reviewed_at' => now(),
+            'review_notes' => $staffNotes,
+        ]);
     }
 
     public function reschedule(
@@ -133,44 +128,33 @@ class AppointmentRequestReviewService
         int $dentistId,
         string $appointmentDate,
         string $startTime,
-        string $staffNotes
+        ?string $staffNotes = null
     ): void {
         if (!in_array($requestModel->request_status, ['pending', 'under_review'], true)) {
-            throw new RuntimeException('Only pending or under review requests can be rescheduled.');
+            throw new RuntimeException('Request cannot be rescheduled.');
         }
 
-        [$isAvailable, $errorMessage] = $this->availabilityService->validateRequest(
+        [$ok, $message] = $this->availabilityService->validateRequest(
             serviceId: (int) $requestModel->service_id,
             preferredDentistId: $dentistId,
             date: $appointmentDate,
             startTime: $startTime
         );
 
-        if (!$isAvailable) {
-            throw new RuntimeException($errorMessage ?: 'Selected new slot is not available.');
+        if (!$ok) {
+            throw new RuntimeException($message ?: 'New slot not available.');
         }
 
-        DB::transaction(function () use ($requestModel, $dentistId, $appointmentDate, $startTime, $staffNotes) {
-            $oldStatus = $requestModel->request_status;
+        $normalizedStart = Carbon::parse($appointmentDate . ' ' . $startTime)->format('H:i:s');
 
-            $requestModel->update([
-                'preferred_dentist_id' => $dentistId,
-                'preferred_date' => $appointmentDate,
-                'preferred_start_time' => Carbon::parse($appointmentDate . ' ' . $startTime)->format('H:i:s'),
-                'request_status' => 'rescheduled',
-                'reviewed_by_user_id' => Auth::id(),
-                'reviewed_at' => now(),
-                'staff_notes' => $staffNotes,
-            ]);
-
-            AppointmentStatusLog::create([
-                'request_id' => $requestModel->request_id,
-                'changed_by_user_id' => Auth::id(),
-                'entity_type' => 'request',
-                'from_status' => $oldStatus,
-                'to_status' => 'rescheduled',
-                'remarks' => $staffNotes,
-            ]);
-        });
+        $requestModel->update([
+            'preferred_dentist_id' => $dentistId,
+            'preferred_date' => $appointmentDate,
+            'preferred_start_time' => $normalizedStart,
+            'request_status' => 'under_review',
+            'reviewed_by_user_id' => Auth::id(),
+            'reviewed_at' => now(),
+            'review_notes' => $staffNotes,
+        ]);
     }
 }

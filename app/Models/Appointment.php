@@ -36,7 +36,7 @@ class Appointment extends Model
         'remarks',
     ];
 
-     protected function casts(): array
+    protected function casts(): array
     {
         return [
             'appointment_date' => 'date',
@@ -44,27 +44,45 @@ class Appointment extends Model
             'estimated_price' => 'decimal:2',
             'grace_period_minutes' => 'integer',
             'queue_number' => 'integer',
+            'checked_in_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'no_show_at' => 'datetime',
         ];
     }
 
-     public function request(): BelongsTo
+    public function request(): BelongsTo
     {
         return $this->belongsTo(AppointmentRequest::class, 'request_id', 'request_id');
     }
 
-    public function dentist()
+    public function dentist(): BelongsTo
     {
         return $this->belongsTo(Dentist::class, 'dentist_id', 'dentist_id');
     }
 
-    public function service()
+    public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class, 'service_id', 'service_id');
     }
 
-    public function patient()
+    public function patient(): BelongsTo
     {
         return $this->belongsTo(Patient::class, 'patient_id', 'patient_id');
+    }
+
+    public function bookedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'booked_by', 'user_id');
+    }
+
+    public function confirmedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'confirmed_by', 'user_id');
+    }
+
+    public function cancelledBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelled_by', 'user_id');
     }
 
     public function statusLogs(): HasMany
@@ -72,5 +90,8 @@ class Appointment extends Model
         return $this->hasMany(AppointmentStatusLog::class, 'appointment_id', 'appointment_id');
     }
 
-
+    public function reminders(): HasMany
+    {
+        return $this->hasMany(Reminder::class, 'appointment_id', 'appointment_id');
+    }
 }
