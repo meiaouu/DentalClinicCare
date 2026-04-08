@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('staff.layouts.app')
 
 @section('content')
     <div style="padding:32px; max-width:1100px; margin:0 auto;">

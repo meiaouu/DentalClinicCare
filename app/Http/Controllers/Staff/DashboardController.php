@@ -22,42 +22,38 @@ class DashboardController extends Controller
                 ->whereDate('appointment_date', $today)
                 ->count(),
 
-            'today_confirmed' => Appointment::query()
+            'confirmed_today' => Appointment::query()
                 ->whereDate('appointment_date', $today)
                 ->where('status', 'confirmed')
                 ->count(),
 
-            'today_checked_in' => Appointment::query()
+            'checked_in_today' => Appointment::query()
                 ->whereDate('appointment_date', $today)
                 ->where('status', 'checked_in')
                 ->count(),
 
-            'today_in_progress' => Appointment::query()
-                ->whereDate('appointment_date', $today)
-                ->where('status', 'in_progress')
-                ->count(),
-
-            'today_completed' => Appointment::query()
+            'completed_today' => Appointment::query()
                 ->whereDate('appointment_date', $today)
                 ->where('status', 'completed')
                 ->count(),
 
-            'today_no_show' => Appointment::query()
+            'no_show_today' => Appointment::query()
                 ->whereDate('appointment_date', $today)
                 ->where('status', 'no_show')
                 ->count(),
         ];
 
-        $todayAppointments = Appointment::query()
+        $appointments = Appointment::query()
             ->with(['patient', 'dentist.user', 'service'])
-            ->whereDate('appointment_date', $today)
+            ->whereDate('appointment_date', '>=', $today)
+            ->orderBy('appointment_date')
             ->orderBy('start_time')
-            ->limit(10)
+            ->limit(12)
             ->get();
 
         return view('staff.dashboard', [
             'stats' => $stats,
-            'todayAppointments' => $todayAppointments,
+            'appointments' => $appointments,
         ]);
     }
 }

@@ -1,7 +1,9 @@
-@extends('layouts.app')
+@extends('staff.layouts.app')
 
 @section('content')
-<div style="padding:32px;">
+
+            <div style="padding:20px;">
+
     <h1 style="font-size:28px; font-weight:800; margin-bottom:20px;">Daily Appointments</h1>
 
     @if(session('success'))
@@ -35,6 +37,7 @@
     </form>
 
     <div style="display:grid; gap:16px;">
+
         @forelse($appointments as $appointment)
             <div style="background:white; border:1px solid #e2e8f0; border-radius:16px; padding:20px;">
                 <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
@@ -99,4 +102,5 @@
         {{ $appointments->links() }}
     </div>
 </div>
+
 @endsection
