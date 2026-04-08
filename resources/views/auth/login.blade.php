@@ -10,8 +10,8 @@
         <input type="hidden" name="redirect" value="{{ $redirect }}">
 
         <div class="mb-3">
-            <label class="form-label">Email</label>
-            <input type="email" name="email" class="form-control" value="{{ old('email') }}" required>
+            <label class="form-label">Email/Username</label>
+           <input type="text" name="login" value="{{ old('login') }}" placeholder="Email, username, or mobile number">
         </div>
 
         <div class="mb-3">
@@ -25,6 +25,9 @@
         </div>
 
         <button type="submit" class="btn btn-primary">Login</button>
+
+        @csrf
+<input type="hidden" name="redirect" value="{{ $redirect ?? old('redirect') }}">
     </form>
 </div>
 @endsection
