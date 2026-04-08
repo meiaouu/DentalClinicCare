@@ -307,7 +307,7 @@ class BookingAvailabilityService
         return Appointment::query()
             ->whereDate('appointment_date', $date)
             ->where('dentist_id', $dentistId)
-            ->whereIn('status', ['approved', 'completed', 'checked_in', 'in_progress'])
+            ->whereIn('status', ['confirmed', 'checked_in', 'in_progress', 'completed'])
             ->where(function ($q) use ($startTime, $endTime) {
                 $q->where('start_time', '<', $endTime)
                     ->where('end_time', '>', $startTime);

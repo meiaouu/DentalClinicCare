@@ -20,7 +20,18 @@ class BookingReviewRequest extends FormRequest
             'service_id' => ['required', 'integer', 'exists:services,service_id'],
             'preferred_dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
             'preferred_date' => ['required', 'date', 'after_or_equal:today'],
-            'preferred_start_time' => ['required', 'date_format:H:i'],
+            'preferred_start_time' => [
+    'required',
+    function ($attribute, $value, $fail) {
+        $valid =
+            \Carbon\Carbon::hasFormat($value, 'H:i') ||
+            \Carbon\Carbon::hasFormat($value, 'H:i:s');
+
+        if (!$valid) {
+            $fail('The appointment time must be in valid 24-hour format.');
+        }
+    },
+],
             'notes' => ['nullable', 'string', 'max:2000'],
 
             'region' => ['required', 'string', 'max:100'],

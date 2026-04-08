@@ -708,14 +708,14 @@ const oldBarangay = oldValuesEl?.dataset.barangay || '';
                     btn.dataset.value = normalizedHour;
 
                     btn.addEventListener('click', function () {
-                        document.querySelectorAll('.time-slot-btn').forEach(el => {
-                            el.classList.remove('active');
-                        });
-
-                        btn.classList.add('active');
-                        hiddenTimeInput.value = normalizedHour;
+                    document.querySelectorAll('.time-slot-btn').forEach(el => {
+                        el.classList.remove('active');
                     });
-                } else {
+
+                    btn.classList.add('active');
+                    hiddenTimeInput.value = normalizedHour.slice(0, 5);
+                });
+                                } else {
                     btn.classList.add('disabled');
                     btn.disabled = true;
                 }
