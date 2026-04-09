@@ -6,7 +6,7 @@ use App\Models\Appointment;
 use App\Models\ClinicScheduleRule;
 use App\Models\ClinicSetting;
 use App\Models\Dentist;
-use App\Models\DentistSchedule;
+use App\Models\DentistDateOverride;
 use App\Models\DentistUnavailableDate;
 use App\Models\ScheduleBlock;
 use App\Models\Service;
@@ -141,16 +141,31 @@ class BookingAvailabilityService
         }
 
         if ($dentistId !== null) {
-            if (!$this->isDentistScheduled(
-                $dentistId,
-                $date,
-                $slotStart->format('H:i:s'),
-                $slotEnd->format('H:i:s')
-            )) {
-                return false;
+            $dateOverride = DentistDateOverride::query()
+                ->where('dentist_id', $dentistId)
+                ->whereDate('override_date', $date)
+                ->first();
+
+            if ($dateOverride) {
+                if (!$dateOverride->is_available) {
+                    return false;
+                }
+
+                if ($dateOverride->start_time && $dateOverride->end_time) {
+                    $overrideStart = Carbon::parse($date . ' ' . $dateOverride->start_time);
+                    $overrideEnd = Carbon::parse($date . ' ' . $dateOverride->end_time);
+
+                    if ($slotStart->lt($overrideStart) || $slotEnd->gt($overrideEnd)) {
+                        return false;
+                    }
+                }
             }
 
             if ($this->isDentistBlocked($dentistId, $date, $slotStart, $slotEnd)) {
+                return false;
+            }
+
+            if (Carbon::parse($date)->dayOfWeek === 0) {
                 return false;
             }
 
@@ -172,16 +187,31 @@ class BookingAvailabilityService
             ->contains(function ($dentist) use ($date, $slotStart, $slotEnd) {
                 $dentistId = (int) $dentist->dentist_id;
 
-                if (!$this->isDentistScheduled(
-                    $dentistId,
-                    $date,
-                    $slotStart->format('H:i:s'),
-                    $slotEnd->format('H:i:s')
-                )) {
-                    return false;
+                $dateOverride = DentistDateOverride::query()
+                    ->where('dentist_id', $dentistId)
+                    ->whereDate('override_date', $date)
+                    ->first();
+
+                if ($dateOverride) {
+                    if (!$dateOverride->is_available) {
+                        return false;
+                    }
+
+                    if ($dateOverride->start_time && $dateOverride->end_time) {
+                        $overrideStart = Carbon::parse($date . ' ' . $dateOverride->start_time);
+                        $overrideEnd = Carbon::parse($date . ' ' . $dateOverride->end_time);
+
+                        if ($slotStart->lt($overrideStart) || $slotEnd->gt($overrideEnd)) {
+                            return false;
+                        }
+                    }
                 }
 
                 if ($this->isDentistBlocked($dentistId, $date, $slotStart, $slotEnd)) {
+                    return false;
+                }
+
+                if (Carbon::parse($date)->dayOfWeek === 0) {
                     return false;
                 }
 
@@ -215,6 +245,19 @@ class BookingAvailabilityService
 
     protected function hasAnyPossibleSlot(string $date, int $dentistId, int $duration): bool
     {
+        $dateOverride = DentistDateOverride::query()
+            ->where('dentist_id', $dentistId)
+            ->whereDate('override_date', $date)
+            ->first();
+
+        if ($dateOverride && !$dateOverride->is_available) {
+            return false;
+        }
+
+        if (Carbon::parse($date)->dayOfWeek === 0) {
+            return false;
+        }
+
         $daySchedule = $this->getClinicDaySchedule($date);
         $clinic = ClinicSetting::query()->first();
 
@@ -230,13 +273,17 @@ class BookingAvailabilityService
             $start = $cursor->copy();
             $end = $cursor->copy()->addMinutes($duration);
 
+            if ($dateOverride && $dateOverride->start_time && $dateOverride->end_time) {
+                $overrideStart = Carbon::parse($date . ' ' . $dateOverride->start_time);
+                $overrideEnd = Carbon::parse($date . ' ' . $dateOverride->end_time);
+
+                if ($start->lt($overrideStart) || $end->gt($overrideEnd)) {
+                    $cursor->addMinutes($interval);
+                    continue;
+                }
+            }
+
             if (
-                $this->isDentistScheduled(
-                    $dentistId,
-                    $date,
-                    $start->format('H:i:s'),
-                    $end->format('H:i:s')
-                ) &&
                 !$this->hasClinicBlock($date, $start->format('H:i:s'), $end->format('H:i:s')) &&
                 !$this->isDentistBlocked($dentistId, $date, $start, $end) &&
                 !$this->hasApprovedAppointmentConflict(
@@ -267,19 +314,6 @@ class BookingAvailabilityService
                             ->where('end_time', '>', $startTime);
                     });
             })
-            ->exists();
-    }
-
-    protected function isDentistScheduled(int $dentistId, string $date, string $startTime, string $endTime): bool
-    {
-        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
-
-        return DentistSchedule::query()
-            ->where('dentist_id', $dentistId)
-            ->where('day_of_week', $dayOfWeek)
-            ->where('is_available', true)
-            ->where('start_time', '<=', $startTime)
-            ->where('end_time', '>=', $endTime)
             ->exists();
     }
 

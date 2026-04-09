@@ -240,9 +240,33 @@
         background: #fbfdff;
     }
 
-    .calendar-cell.weekly-available {
-        background: #f8fffb;
-    }
+   .calendar-cell.weekly-available {
+    background: #f8fffb;
+}
+
+.calendar-cell.weekly-unavailable {
+    background: #ffffff;
+}
+
+.calendar-cell.override-available {
+    background: #ecfdf5;
+}
+
+.calendar-cell.override-unavailable {
+    background: #fef2f2;
+}
+
+.calendar-cell.weekly-unavailable {
+    background: #ffffff;
+}
+
+.calendar-cell.override-available {
+    background: #ecfdf5;
+}
+
+.calendar-cell.override-unavailable {
+    background: #fef2f2;
+}
 
     .calendar-cell.override-available {
         background: #ecfdf5;
@@ -582,6 +606,74 @@
             min-width: 700px;
         }
     }
+
+
+
+
+
+
+
+.weekly-accordion-list {
+    gap: 10px;
+}
+
+.accordion-day-card {
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.accordion-day-header {
+    width: 100%;
+    border: none;
+    background: #ffffff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 20px;
+    cursor: pointer;
+    text-align: left;
+}
+
+.accordion-day-header-left {
+    display: grid;
+    gap: 6px;
+}
+
+.accordion-day-header-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.accordion-day-arrow {
+    font-size: 16px;
+    font-weight: 800;
+    color: #64748b;
+    transition: transform 0.18s ease;
+}
+
+.accordion-day-card.is-open .accordion-day-arrow {
+    transform: rotate(180deg);
+}
+
+.accordion-day-content {
+    border-top: 1px solid #eef2f7;
+    background: #ffffff;
+}
+
+
+
+
+
+
+
+
+
+
+
+
 </style>
 
 
@@ -600,43 +692,18 @@
         }
     }
 
-    $calendarDays = [
-        ['date' => 30, 'muted' => true],
-        ['date' => 31, 'muted' => true],
-        ['date' => 1, 'muted' => false],
-        ['date' => 2, 'muted' => false],
-        ['date' => 3, 'muted' => false],
-        ['date' => 4, 'muted' => false],
-        ['date' => 5, 'muted' => false],
-        ['date' => 6, 'muted' => false],
-        ['date' => 7, 'muted' => false],
-        ['date' => 8, 'muted' => false],
-        ['date' => 9, 'muted' => false],
-        ['date' => 10, 'muted' => false],
-        ['date' => 11, 'muted' => false],
-        ['date' => 12, 'muted' => false],
-        ['date' => 13, 'muted' => false],
-        ['date' => 14, 'muted' => false],
-        ['date' => 15, 'muted' => false],
-        ['date' => 16, 'muted' => false],
-        ['date' => 17, 'muted' => false],
-        ['date' => 18, 'muted' => false],
-        ['date' => 19, 'muted' => false],
-        ['date' => 20, 'muted' => false],
-        ['date' => 21, 'muted' => false],
-        ['date' => 22, 'muted' => false],
-        ['date' => 23, 'muted' => false],
-        ['date' => 24, 'muted' => false],
-        ['date' => 25, 'muted' => false],
-        ['date' => 26, 'muted' => false],
-        ['date' => 27, 'muted' => false],
-        ['date' => 28, 'muted' => false],
-        ['date' => 29, 'muted' => false],
-        ['date' => 30, 'muted' => false],
-        ['date' => 1, 'muted' => true],
-        ['date' => 2, 'muted' => true],
-        ['date' => 3, 'muted' => true],
+    $calendarBaseDate = now()->startOfMonth();
+$calendarGridStart = $calendarBaseDate->copy()->startOfWeek(\Carbon\Carbon::SUNDAY);
+
+$calendarDays = collect(range(0, 34))->map(function ($offset) use ($calendarGridStart, $calendarBaseDate) {
+    $date = $calendarGridStart->copy()->addDays($offset);
+
+    return [
+        'date' => $date->day,
+        'full_date' => $date->format('Y-m-d'),
+        'muted' => $date->month !== $calendarBaseDate->month,
     ];
+})->all();
 
     $calendarWeekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -752,168 +819,179 @@
                             @endforeach
                         </div>
 
-                        <div class="calendar-grid" id="availabilityCalendarGrid">
-                            @foreach($calendarDays as $index => $cell)
-                                @php
-                                    $baseDate = now()->startOfMonth()->startOfWeek();
-                                    $cellFullDate = $baseDate->copy()->addDays($index)->format('Y-m-d');
+                       <div class="calendar-grid" id="availabilityCalendarGrid">
+    @foreach($calendarDays as $index => $cell)
+       @php
+    $cellDateCarbon = \Carbon\Carbon::parse($cell['full_date']);
+    $cellFullDate = $cell['full_date'];
+    $cellWeekdayIndex = (int) $cellDateCarbon->dayOfWeek;
 
-                                    $cellWeekdayIndex = $index % 7;
-                                    $cellDayKey = array_search($cellWeekdayIndex, $weekdayOrder, true);
-                                    $cellPreview = $cellDayKey !== false ? ($schedulePreview[$cellDayKey] ?? null) : null;
+    $override = $dateOverridesMap->get($cellFullDate);
 
-                                    $override = $dateOverridesMap->get($cellFullDate);
+    $blockedDate = $unavailableDates->getCollection()->first(function ($item) use ($cellFullDate) {
+        return $item->unavailable_date === $cellFullDate;
+    });
 
-                                    if ($override) {
-                                        $cellStatus = $override->is_available ? 'override-available' : 'override-unavailable';
-                                    } elseif (!$cell['muted'] && $cellPreview && $cellPreview['available']) {
-                                        $cellStatus = 'weekly-available';
-                                    } else {
-                                        $cellStatus = '';
-                                    }
-                                @endphp
+    if ($cell['muted']) {
+        $cellStatus = '';
+        $cellTag = null;
+        $cellTagClass = null;
+    } elseif ($override) {
+        $cellStatus = $override->is_available ? 'override-available' : 'override-unavailable';
+        $cellTag = $override->is_available ? 'Available' : 'Unavailable';
+        $cellTagClass = $override->is_available ? 'available' : 'blocked';
+    } elseif ($blockedDate) {
+        $cellStatus = 'override-unavailable';
+        $cellTag = 'Blocked';
+        $cellTagClass = 'blocked';
+    } elseif ($cellWeekdayIndex === 0) {
+        $cellStatus = 'weekly-unavailable';
+        $cellTag = 'Unavailable';
+        $cellTagClass = 'off';
+    } else {
+        $cellStatus = 'weekly-available';
+        $cellTag = 'Available';
+        $cellTagClass = 'available';
+    }
 
-                                <div
-                                    class="calendar-cell {{ $cell['muted'] ? 'muted' : '' }} {{ $cellStatus }} {{ (!$cell['muted'] && $selectedCalendarDate === $cellFullDate) ? 'selected' : '' }}"
-                                    data-date="{{ $cellFullDate }}"
-                                    data-selectable="{{ $cell['muted'] ? '0' : '1' }}"
-                                >
-                                    <div class="calendar-date">{{ $cell['date'] }}</div>
+    $currentSelectedDate = old('unavailable_date', now()->toDateString());
+@endphp
+        <div
+            class="calendar-cell {{ $cell['muted'] ? 'muted' : '' }} {{ $cellStatus }} {{ (!$cell['muted'] && $selectedCalendarDate === $cellFullDate) ? 'selected' : '' }}"
+            data-date="{{ $cellFullDate }}"
+            data-selectable="{{ $cell['muted'] ? '0' : '1' }}"
+        >
+            <div class="calendar-date">{{ $cell['date'] }}</div>
 
-                                    @if(!$cell['muted'])
-                                        @if($override)
-                                            <div class="calendar-mini-tag {{ $override->is_available ? 'available' : 'blocked' }}">
-                                                {{ $override->is_available ? 'Available' : 'Unavailable' }}
-                                            </div>
-                                        @elseif($cellPreview && $cellPreview['available'] && $cellPreview['start'] && $cellPreview['end'])
-                                            <div class="calendar-mini-tag available">
-                                                {{ $cellPreview['start'] }} - {{ $cellPreview['end'] }}
-                                            </div>
-                                        @elseif($cellPreview && $cellPreview['available'])
-                                            <div class="calendar-mini-tag partial">
-                                                Available
-                                            </div>
-                                        @else
-                                            <div class="calendar-mini-tag off">
-                                                Unavailable
-                                            </div>
-                                        @endif
-                                    @endif
-                                </div>
-                            @endforeach
-                        </div>
+            @if(!$cell['muted'] && $cellTag)
+                <div class="calendar-mini-tag {{ $cellTagClass }}">
+                    {{ $cellTag }}
+                </div>
+            @endif
+        </div>
+    @endforeach
+</div>
                     </div>
                 </div>
 
                 <div class="availability-panel-body">
-                    <div class="section-head">
-                        <div>
-                            <h3 class="section-title">Weekly Availability</h3>
-                            <p class="section-text">
-                                Set your working hours for each day.
-                            </p>
+    <div class="section-head">
+        <div>
+            <h3 class="section-title">Weekly Availability</h3>
+            <p class="section-text">
+                Click a day to open and edit its schedule.
+            </p>
+        </div>
+    </div>
+
+    <div class="bulk-actions">
+        <button type="button" class="bulk-btn" id="markAllAvailableBtn">Mark All Available</button>
+        <button type="button" class="bulk-btn" id="markAllUnavailableBtn">Mark All Unavailable</button>
+    </div>
+
+    <form method="POST" action="{{ route('dentist.availability.store') }}">
+        @csrf
+
+        <div class="weekly-list weekly-accordion-list">
+            @foreach($dayLabels as $dayValue => $dayLabel)
+                @php $schedule = $schedules[$dayValue] ?? null; @endphp
+                @php
+                    $isAvailable = old("days.$dayValue.is_available", $schedule->is_available ?? false);
+                    $startValue = old("days.$dayValue.start_time", isset($schedule->start_time) ? substr($schedule->start_time, 0, 5) : '');
+                    $endValue = old("days.$dayValue.end_time", isset($schedule->end_time) ? substr($schedule->end_time, 0, 5) : '');
+                    $maxPatientsValue = old("days.$dayValue.max_patients", $schedule->max_patients ?? 20);
+                    $isOpen = $loop->first;
+                @endphp
+
+                <div class="day-card availability-day-card accordion-day-card {{ $isOpen ? 'is-open' : '' }}" data-day="{{ $dayValue }}">
+                    <button type="button" class="accordion-day-header" data-day-toggle="{{ $dayValue }}">
+                        <div class="accordion-day-header-left">
+                            <div class="day-name">{{ $dayLabel }}</div>
+                            <div class="day-meta">
+                                @if($startValue && $endValue)
+                                    {{ $startValue }} to {{ $endValue }}
+                                @else
+                                    No time set yet
+                                @endif
+                            </div>
                         </div>
-                    </div>
 
-                    <div class="bulk-actions">
-                        <button type="button" class="bulk-btn" id="markAllAvailableBtn">Mark All Available</button>
-                        <button type="button" class="bulk-btn" id="markAllUnavailableBtn">Mark All Unavailable</button>
-                    </div>
+                        <div class="accordion-day-header-right">
+                            <div class="day-status {{ $isAvailable ? 'available' : 'unavailable' }}" data-status-badge="{{ $dayValue }}">
+                                {{ $isAvailable ? 'Available' : 'Unavailable' }}
+                            </div>
+                            <span class="accordion-day-arrow">▾</span>
+                        </div>
+                    </button>
 
-                    <form method="POST" action="{{ route('dentist.availability.store') }}">
-                        @csrf
+                    <div class="accordion-day-content" @if(!$isOpen)style="display:none;"@endif>
+                        <div class="day-main">
+                            <div class="day-top-controls">
+                                <label class="toggle-label">
+                                    <input
+                                        type="checkbox"
+                                        name="days[{{ $dayValue }}][is_available]"
+                                        value="1"
+                                        class="availability-checkbox"
+                                        data-day="{{ $dayValue }}"
+                                        {{ $isAvailable ? 'checked' : '' }}>
+                                    <span>Available for booking</span>
+                                </label>
 
-                        <div class="weekly-list">
-                            @foreach($dayLabels as $dayValue => $dayLabel)
-                                @php $schedule = $schedules[$dayValue] ?? null; @endphp
-                                @php
-                                    $isAvailable = old("days.$dayValue.is_available", $schedule->is_available ?? false);
-                                    $startValue = old("days.$dayValue.start_time", isset($schedule->start_time) ? substr($schedule->start_time,0,5) : '');
-                                    $endValue = old("days.$dayValue.end_time", isset($schedule->end_time) ? substr($schedule->start_time ? $schedule->end_time : '',0,5) : '');
-                                    $maxPatientsValue = old("days.$dayValue.max_patients", $schedule->max_patients ?? 20);
-                                @endphp
-
-                                <div class="day-card availability-day-card" data-day="{{ $dayValue }}">
-                                    <div class="day-card-grid">
-                                        <div class="day-side">
-                                            <h4 class="day-name">{{ $dayLabel }}</h4>
-
-                                            <div class="day-status {{ $isAvailable ? 'available' : 'unavailable' }}" data-status-badge="{{ $dayValue }}">
-                                                {{ $isAvailable ? 'Available' : 'Unavailable' }}
-                                            </div>
-
-                                            <div class="day-meta">
-                                                @if($startValue && $endValue)
-                                                    {{ $startValue }} to {{ $endValue }}
-                                                @else
-                                                    No time set yet
-                                                @endif
-                                            </div>
-                                        </div>
-
-                                        <div class="day-main">
-                                            <div class="day-top-controls">
-                                                <label class="toggle-label">
-                                                    <input
-                                                        type="checkbox"
-                                                        name="days[{{ $dayValue }}][is_available]"
-                                                        value="1"
-                                                        class="availability-checkbox"
-                                                        data-day="{{ $dayValue }}"
-                                                        {{ $isAvailable ? 'checked' : '' }}>
-                                                    <span>Available for booking</span>
-                                                </label>
-
-                                                <div class="mini-select-wrap">
-                                                    <label class="mini-label">Status</label>
-                                                    <select class="mini-select availability-status-select" data-day="{{ $dayValue }}">
-                                                        <option value="available" {{ $isAvailable ? 'selected' : '' }}>Available</option>
-                                                        <option value="unavailable" {{ !$isAvailable ? 'selected' : '' }}>Unavailable</option>
-                                                    </select>
-                                                </div>
-                                            </div>
-
-                                            <div class="day-input-grid">
-                                                <div>
-                                                    <label class="input-label">Start Time</label>
-                                                    <input
-                                                        type="time"
-                                                        name="days[{{ $dayValue }}][start_time]"
-                                                        class="input-field form-control"
-                                                        value="{{ $startValue }}">
-                                                </div>
-
-                                                <div>
-                                                    <label class="input-label">End Time</label>
-                                                    <input
-                                                        type="time"
-                                                        name="days[{{ $dayValue }}][end_time]"
-                                                        class="input-field form-control"
-                                                        value="{{ $endValue }}">
-                                                </div>
-
-                                                <div>
-                                                    <label class="input-label">Max Patients</label>
-                                                    <input
-                                                        type="number"
-                                                        name="days[{{ $dayValue }}][max_patients]"
-                                                        class="input-field form-control"
-                                                        value="{{ $maxPatientsValue }}">
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div class="mini-select-wrap">
+                                    <label class="mini-label">Status</label>
+                                    <select class="mini-select availability-status-select" data-day="{{ $dayValue }}">
+                                        <option value="available" {{ $isAvailable ? 'selected' : '' }}>Available</option>
+                                        <option value="unavailable" {{ !$isAvailable ? 'selected' : '' }}>Unavailable</option>
+                                    </select>
                                 </div>
-                            @endforeach
-                        </div>
+                            </div>
 
-                        <div style="margin-top: 18px;">
-                            <button class="primary-btn" type="submit">Save Weekly Availability</button>
+                            <div class="day-input-grid">
+                                <div>
+                                    <label class="input-label">Start Time</label>
+                                    <input
+                                        type="time"
+                                        name="days[{{ $dayValue }}][start_time]"
+                                        class="input-field form-control"
+                                        value="{{ $startValue }}">
+                                </div>
+
+                                <div>
+                                    <label class="input-label">End Time</label>
+                                    <input
+                                        type="time"
+                                        name="days[{{ $dayValue }}][end_time]"
+                                        class="input-field form-control"
+                                        value="{{ $endValue }}">
+                                </div>
+
+                                <div>
+                                    <label class="input-label">Max Patients</label>
+                                    <input
+                                        type="number"
+                                        name="days[{{ $dayValue }}][max_patients]"
+                                        class="input-field form-control"
+                                        value="{{ $maxPatientsValue }}">
+                                </div>
+                            </div>
                         </div>
-                    </form>
+                    </div>
                 </div>
+            @endforeach
+        </div>
+
+        <div style="margin-top: 18px;">
+            <button class="primary-btn" type="submit">Save Weekly Availability</button>
+        </div>
+    </form>
+</div>
             </div>
         </div>
+
+
+
+
 
         <div class="availability-right">
             <div class="availability-panel">
@@ -1239,6 +1317,49 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     }
+});
+
+
+
+
+
+
+
+
+
+
+
+const accordionDayToggles = document.querySelectorAll('[data-day-toggle]');
+
+accordionDayToggles.forEach(function (toggle) {
+    toggle.addEventListener('click', function () {
+        const card = this.closest('.accordion-day-card');
+        const content = card ? card.querySelector('.accordion-day-content') : null;
+
+        if (!card || !content) {
+            return;
+        }
+
+        document.querySelectorAll('.accordion-day-card').forEach(function (item) {
+            if (item !== card) {
+                item.classList.remove('is-open');
+                const itemContent = item.querySelector('.accordion-day-content');
+                if (itemContent) {
+                    itemContent.style.display = 'none';
+                }
+            }
+        });
+
+        const isOpen = card.classList.contains('is-open');
+
+        if (isOpen) {
+            card.classList.remove('is-open');
+            content.style.display = 'none';
+        } else {
+            card.classList.add('is-open');
+            content.style.display = '';
+        }
+    });
 });
 </script>
 @endsection
