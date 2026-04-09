@@ -125,19 +125,6 @@ Route::middleware(['auth', 'role:dentist'])
     ->group(function () {
         Route::get('/dashboard', [DentistDashboardController::class, 'index'])->name('dashboard');
 
-        Route::get('/availability', [DentistAvailabilityController::class, 'index'])->name('availability.index');
-        Route::post('/availability', [DentistAvailabilityController::class, 'storeOrUpdate'])->name('availability.store');
-
-        Route::post('/unavailable-dates', [DentistAvailabilityController::class, 'storeUnavailableDate'])->name('unavailable-dates.store');
-        Route::delete('/unavailable-dates/{unavailableDate}', [DentistAvailabilityController::class, 'destroyUnavailableDate'])->name('unavailable-dates.destroy');
-    });
-
-Route::middleware(['auth', 'role:dentist'])
-    ->prefix('dentist')
-    ->name('dentist.')
-    ->group(function () {
-        Route::get('/dashboard', [DentistDashboardController::class, 'index'])->name('dashboard');
-
         Route::get('/schedule', function () {
             return view('dentist.schedule.index');
         })->name('schedule.index');
@@ -171,14 +158,13 @@ Route::middleware(['auth', 'role:dentist'])
 
         Route::post('/unavailable-dates', [DentistAvailabilityController::class, 'storeUnavailableDate'])->name('unavailable-dates.store');
         Route::delete('/unavailable-dates/{unavailableDate}', [DentistAvailabilityController::class, 'destroyUnavailableDate'])->name('unavailable-dates.destroy');
+
+        Route::post('/availability/date-override', [DentistAvailabilityController::class, 'storeDateOverride'])
+            ->name('availability.date-override.store');
+
+        Route::delete('/availability/date-override/{dateOverride}', [DentistAvailabilityController::class, 'destroyDateOverride'])
+            ->name('availability.date-override.destroy');
     });
-
-
-
-
-
-
-
 
 
 

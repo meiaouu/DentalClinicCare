@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Dentist;
 
 use App\Http\Controllers\Controller;
+use App\Models\DentistDateOverride;
 use App\Models\DentistSchedule;
 use App\Models\DentistUnavailableDate;
 use Illuminate\Http\RedirectResponse;
@@ -14,33 +15,84 @@ use Illuminate\View\View;
 class AvailabilityController extends Controller
 {
     public function index(): View
-    {
-        $dentist = Auth::user()->dentist;
-        abort_if(!$dentist, 403);
+{
+    $dentist = Auth::user()->dentist;
+    abort_if(!$dentist, 403);
 
-        $schedules = DentistSchedule::query()
+    $schedules = DentistSchedule::query()
+        ->where('dentist_id', $dentist->dentist_id)
+        ->orderBy('day_of_week')
+        ->get()
+        ->keyBy('day_of_week');
+
+    $unavailableDates = DentistUnavailableDate::query()
+        ->where('dentist_id', $dentist->dentist_id)
+        ->orderByDesc('unavailable_date')
+        ->paginate(15, ['*'], 'blocked_page');
+
+    $dateOverrides = DentistDateOverride::query()
+        ->where('dentist_id', $dentist->dentist_id)
+        ->orderByDesc('override_date')
+        ->paginate(10, ['*'], 'override_page');
+
+    $dateOverridesMap = DentistDateOverride::query()
+        ->where('dentist_id', $dentist->dentist_id)
+        ->get()
+        ->keyBy('override_date');
+
+    $dayLabels = [
+        'monday' => 'Monday',
+        'tuesday' => 'Tuesday',
+        'wednesday' => 'Wednesday',
+        'thursday' => 'Thursday',
+        'friday' => 'Friday',
+        'saturday' => 'Saturday',
+        'sunday' => 'Sunday',
+    ];
+
+    $summary = [
+        'available_days' => DentistSchedule::query()
             ->where('dentist_id', $dentist->dentist_id)
-            ->orderBy('day_of_week')
-            ->get()
-            ->keyBy('day_of_week');
+            ->where('is_available', true)
+            ->count(),
 
-        $unavailableDates = DentistUnavailableDate::query()
+        'unavailable_days' => DentistSchedule::query()
             ->where('dentist_id', $dentist->dentist_id)
-            ->orderByDesc('unavailable_date')
-            ->paginate(15);
+            ->where(function ($query) {
+                $query->where('is_available', false)
+                    ->orWhereNull('is_available');
+            })
+            ->count(),
 
-        $dayLabels = [
-            'monday' => 'Monday',
-            'tuesday' => 'Tuesday',
-            'wednesday' => 'Wednesday',
-            'thursday' => 'Thursday',
-            'friday' => 'Friday',
-            'saturday' => 'Saturday',
-            'sunday' => 'Sunday',
-        ];
+        'date_blocks' => DentistUnavailableDate::query()
+            ->where('dentist_id', $dentist->dentist_id)
+            ->count(),
 
-        return view('dentist.availability.index', compact('dentist', 'schedules', 'unavailableDates', 'dayLabels'));
-    }
+        'available_overrides' => DentistDateOverride::query()
+            ->where('dentist_id', $dentist->dentist_id)
+            ->where('is_available', true)
+            ->count(),
+
+        'unavailable_overrides' => DentistDateOverride::query()
+            ->where('dentist_id', $dentist->dentist_id)
+            ->where('is_available', false)
+            ->count(),
+
+        'weekly_entries' => DentistSchedule::query()
+            ->where('dentist_id', $dentist->dentist_id)
+            ->count(),
+    ];
+
+    return view('dentist.availability.index', compact(
+        'dentist',
+        'schedules',
+        'unavailableDates',
+        'dateOverrides',
+        'dateOverridesMap',
+        'dayLabels',
+        'summary'
+    ));
+}
 
     public function storeOrUpdate(Request $request): RedirectResponse
     {
@@ -109,5 +161,44 @@ class AvailabilityController extends Controller
         $unavailableDate->delete();
 
         return back()->with('success', 'Unavailable date removed successfully.');
+    }
+
+    public function storeDateOverride(Request $request): RedirectResponse
+{
+    $dentist = Auth::user()->dentist;
+    abort_if(!$dentist, 403);
+
+    $validated = $request->validate([
+        'override_date' => ['required', 'date', 'after_or_equal:today'],
+        'is_available' => ['required', 'boolean'],
+        'start_time' => ['nullable', 'date_format:H:i'],
+        'end_time' => ['nullable', 'date_format:H:i', 'after:start_time'],
+        'reason' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    DentistDateOverride::updateOrCreate(
+        [
+            'dentist_id' => $dentist->dentist_id,
+            'override_date' => $validated['override_date'],
+        ],
+        [
+            'is_available' => (bool) $validated['is_available'],
+            'start_time' => $validated['start_time'] ?? null,
+            'end_time' => $validated['end_time'] ?? null,
+            'reason' => $validated['reason'] ?? null,
+        ]
+    );
+
+    return back()->with('success', 'Date override saved successfully.');
+}
+
+    public function destroyDateOverride(DentistDateOverride $dateOverride): RedirectResponse
+    {
+        $dentist = Auth::user()->dentist;
+        abort_if(!$dentist || $dateOverride->dentist_id !== $dentist->dentist_id, 403);
+
+        $dateOverride->delete();
+
+        return back()->with('success', 'Date override removed successfully.');
     }
 }
