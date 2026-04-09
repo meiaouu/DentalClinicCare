@@ -2,82 +2,143 @@
 
 @section('content')
 <style>
-    .booking-shell {
+    .booking-page {
         min-height: 100vh;
-        padding: 40px 20px 80px;
-        background:
-            linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 41, 59, 0.82) 100%),
-            url('{{ asset("images/dentalimg.jpg") }}') center center / cover no-repeat;
+        background: #f8fafc;
+        padding: 40px 16px 72px;
     }
 
-    .booking-wrap {
-        max-width: 1180px;
+    .booking-container {
+        max-width: 1040px;
         margin: 0 auto;
     }
 
     .booking-header {
-        color: #ffff;
+        text-align: center;
         margin-bottom: 28px;
     }
 
-    .booking-eyebrow {
-        font-size: 16px;
-        color: #cbd5e1;
-        margin-bottom: 10px;
-    }
-
-    .booking-main-title {
-        font-size: clamp(34px, 5vw, 52px);
+    .booking-title {
+        margin: 0 0 8px;
+        font-size: clamp(28px, 4vw, 40px);
         font-weight: 800;
-        line-height: 1.08;
-        margin-bottom: 12px;
+        color: #0f172a;
     }
 
-    .booking-main-text {
-        max-width: 760px;
-        font-size: 17px;
+    .booking-subtitle {
+        margin: 0 auto;
+        max-width: 720px;
+        color: #64748b;
+        font-size: 15px;
         line-height: 1.7;
-        color: #e2e8f0;
-        margin-bottom: 0;
     }
 
-    .form-theme-card {
-        background: rgba(255, 255, 255, 0.97);
-        border: 1px solid rgba(255, 255, 255, 0.25);
+    .booking-stepper {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 12px;
+        margin-top: 24px;
+        flex-wrap: wrap;
+    }
+
+    .booking-step {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .booking-step-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 999px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 800;
+        border: 2px solid #dbe4ea;
+        background: #fff;
+        color: #64748b;
+    }
+
+    .booking-step-circle.active {
+        background: #0f9d8a;
+        border-color: #0f9d8a;
+        color: #fff;
+    }
+
+    .booking-step-line {
+        width: 64px;
+        height: 2px;
+        background: #dbe4ea;
+        border-radius: 999px;
+    }
+
+    .booking-step-label {
+        font-size: 14px;
+        font-weight: 700;
+        color: #475569;
+    }
+
+    .booking-card {
+        background: #fff;
+        border: 1px solid #e2e8f0;
         border-radius: 24px;
         padding: 24px;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
-        backdrop-filter: blur(8px);
+        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
     }
 
-    .section-card {
-        background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 20px;
-        padding: 22px;
-        margin-bottom: 22px;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+    .booking-section {
+        border: 1px solid #e9eef3;
+        border-radius: 18px;
+        padding: 20px;
+        background: #fff;
     }
 
-    .section-title {
+    .booking-section + .booking-section {
+        margin-top: 20px;
+    }
+
+    .booking-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #eef2f6;
+    }
+
+    .booking-section-title {
+        margin: 0;
         font-size: 18px;
         font-weight: 800;
         color: #0f172a;
-        margin-bottom: 18px;
+    }
+
+    .booking-section-note {
+        font-size: 12px;
+        font-weight: 700;
+        color: #0f766e;
+        background: #ecfdf5;
+        border-radius: 999px;
+        padding: 6px 10px;
+        white-space: nowrap;
     }
 
     .form-label {
+        font-size: 13px;
         font-weight: 700;
         color: #334155;
-        font-size: 13px;
         margin-bottom: 8px;
     }
 
     .form-control,
     .form-select {
-        height: 52px;
-        border-radius: 14px;
-        border: 1px solid #d1d5db;
+        height: 50px;
+        border-radius: 12px;
+        border: 1px solid #d7e0e8;
         font-size: 15px;
         box-shadow: none !important;
     }
@@ -86,27 +147,92 @@
         min-height: 120px;
         height: auto;
         padding-top: 12px;
+        resize: vertical;
     }
 
     .form-control:focus,
     .form-select:focus {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.10) !important;
+        border-color: #0f9d8a;
+        box-shadow: 0 0 0 4px rgba(15, 157, 138, 0.10) !important;
     }
 
-    .meta-box,
-    .light-panel {
-        border: 1px solid #e5e7eb;
+    .booking-panel {
+        border: 1px solid #e6edf2;
         border-radius: 16px;
-        padding: 18px;
+        padding: 16px;
         background: #f8fafc;
+        height: 30%;
+    }
+    .booking-calendaer-panel {
+        border: 1px solid #e6edf2;
+        border-radius: 16px;
+        padding: 16px;
+        background: #f8fafc;
+        height: 50%;
+    }
+    .booking-slot-panel {
+        border: 1px solid #e6edf2;
+        border-radius: 16px;
+        padding: 16px;
+        background: #f8fafc;
+        height: 50%;
     }
 
-    .meta-box h6,
-    .light-panel h6 {
+    .booking-panel-title {
+        margin: 0 0 8px;
+        font-size: 15px;
         font-weight: 800;
         color: #0f172a;
-        margin-bottom: 10px;
+    }
+
+    .booking-panel-text {
+        font-size: 14px;
+        line-height: 1.7;
+        color: #475569;
+    }
+
+    .doctor-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .doctor-card {
+        border: 1px solid #dbe4ea;
+        background: #fff;
+        border-radius: 16px;
+        padding: 14px;
+        cursor: pointer;
+        transition: 0.2s ease;
+        text-align: left;
+    }
+
+    .doctor-card:hover {
+        border-color: #0f9d8a;
+        background: #f0fdfa;
+    }
+
+    .doctor-card.active {
+        border-color: #0f9d8a;
+        background: #ecfdf5;
+        box-shadow: inset 0 0 0 1px #0f9d8a;
+    }
+
+    .doctor-card-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 4px;
+    }
+
+    .doctor-card-subtitle {
+        font-size: 13px;
+        color: #64748b;
+        line-height: 1.5;
+    }
+
+    .doctor-any-card {
+        margin-bottom: 12px;
     }
 
     .calendar-toolbar {
@@ -114,139 +240,185 @@
         align-items: center;
         justify-content: space-between;
         margin-bottom: 16px;
+        gap: 10px;
     }
 
-    .calendar-toolbar h6 {
+    .calendar-month-label {
         margin: 0;
+        font-size: 16px;
         font-weight: 800;
         color: #0f172a;
     }
 
     .calendar-btn {
-        border: 1px solid #d1d5db;
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: 1px solid #d7e0e8;
         background: #fff;
         color: #334155;
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        font-weight: 700;
+        font-weight: 800;
     }
 
     .calendar-weekdays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
-        margin-bottom: 8px;
+        gap: 8px;
+        margin-bottom: 10px;
+        text-align: center;
         font-size: 12px;
         font-weight: 800;
         color: #64748b;
-        text-align: center;
     }
 
     #bookingCalendarGrid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 6px;
+        gap: 8px;
     }
 
     #bookingCalendarGrid button {
-        min-height: 42px;
+        min-height: 44px;
         border-radius: 10px;
         font-weight: 700;
     }
 
+    .slot-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 10px;
+    }
+
     .time-slot-btn {
-        border: 1px solid #dbe3ea;
-        background: #ffffff;
+        border: 1px solid #dbe4ea;
+        background: #fff;
         border-radius: 12px;
-        padding: 12px 10px;
+        min-height: 46px;
+        padding: 10px;
         font-weight: 700;
         text-align: center;
-        cursor: pointer;
-        transition: all 0.2s ease;
         color: #334155;
-    }
-
-    .time-slot-btn:hover:not(.disabled) {
-        border-color: #2563eb;
-        color: #2563eb;
-    }
-
-    .time-slot-btn.active {
-        background: #2563eb;
-        color: #ffffff;
-        border-color: #2563eb;
-    }
-
-    .time-slot-btn.disabled {
-        background: #f1f5f9;
-        color: #9aa4af;
-        border-color: #e5e7eb;
-        cursor: not-allowed;
-        opacity: 0.75;
-    }
-
-    .submit-wrap {
-        display: flex;
-        justify-content: flex-end;
-        margin-top: 8px;
-    }
-
-    .review-btn {
-        min-width: 220px;
-        height: 54px;
-        border: none;
-        border-radius: 999px;
-        background: #2563eb;
-        color: #fff;
-        font-weight: 800;
-        font-size: 16px;
-        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+        cursor: pointer;
         transition: 0.2s ease;
     }
 
-    .review-btn:hover {
-        background: #1d4ed8;
+    .time-slot-btn:hover:not(.disabled) {
+        border-color: #0f9d8a;
+        color: #0f9d8a;
+    }
+
+    .time-slot-btn.active {
+        background: #0f9d8a;
+        border-color: #0f9d8a;
+        color: #fff;
+    }
+
+    .time-slot-btn.disabled {
+        background: #f8fafc;
+        color: #94a3b8;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
+
+    .booking-actions {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 24px;
+    }
+
+    .booking-primary-btn {
+        min-width: 220px;
+        height: 52px;
+        border: none;
+        border-radius: 14px;
+        background: #0f9d8a;
+        color: #fff;
+        font-size: 15px;
+        font-weight: 800;
+        transition: 0.2s ease;
+    }
+
+    .booking-primary-btn:hover {
+        background: #0d8574;
     }
 
     .alert {
         border-radius: 16px;
     }
 
-    @media (max-width: 768px) {
-        .booking-shell {
-            padding: 24px 14px 60px;
+    .form-check {
+        padding: 10px 12px 10px 34px;
+        border: 1px solid #e5edf2;
+        border-radius: 12px;
+        background: #fff;
+        margin-bottom: 8px;
+    }
+
+    @media (max-width: 991.98px) {
+        .slot-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .booking-page {
+            padding: 28px 12px 56px;
         }
 
-        .form-theme-card,
-        .section-card {
+        .booking-card {
             padding: 18px;
         }
 
-        .submit-wrap {
+        .booking-section {
+            padding: 16px;
+        }
+
+        .booking-step-line {
+            width: 40px;
+        }
+
+        .doctor-grid,
+        .slot-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .booking-actions {
             justify-content: stretch;
         }
 
-        .review-btn {
+        .booking-primary-btn {
             width: 100%;
         }
     }
 </style>
 
-<div class="booking-shell">
-    <div class="booking-wrap">
+<div class="booking-page">
+    <div class="booking-container">
         <div class="booking-header">
-            <div class="booking-eyebrow">Appointment Booking</div>
-            <h1 class="booking-main-title">
-                {{ $isGuest ? 'Guest Booking Form' : 'Book Appointment' }}
-            </h1>
-            <p class="booking-main-text">
-                Fill in your information, choose your dental service, select an available date and time,
-                and review your appointment request before submission.
+            <h1 class="booking-title">{{ $isGuest ? 'Guest Booking Form' : 'Book Appointment' }}</h1>
+            <p class="booking-subtitle">
+                Fill in your information, choose a dental service, select an available doctor, and pick your preferred date and time.
             </p>
+
+            <div class="booking-stepper">
+                <div class="booking-step">
+                    <span class="booking-step-circle active">1</span>
+                    <span class="booking-step-label">Fill Up</span>
+                </div>
+                <span class="booking-step-line"></span>
+                <div class="booking-step">
+                    <span class="booking-step-circle">2</span>
+                    <span class="booking-step-label">Review</span>
+                </div>
+                <span class="booking-step-line"></span>
+                <div class="booking-step">
+                    <span class="booking-step-circle">3</span>
+                    <span class="booking-step-label">Submitted</span>
+                </div>
+            </div>
         </div>
 
-        <div class="form-theme-card">
+        <div class="booking-card">
             @if($errors->any())
                 <div class="alert alert-danger mb-4">
                     <strong>Please fix the following:</strong>
@@ -261,8 +433,11 @@
             <form method="POST" action="{{ route('booking.review') }}" id="bookingForm">
                 @csrf
 
-                <div class="section-card">
-                    <h5 class="section-title">Patient Information</h5>
+                <div class="booking-section">
+                    <div class="booking-section-head">
+                        <h5 class="booking-section-title">Patient Information</h5>
+                        <span class="booking-section-note">{{ $isGuest ? 'Guest Details' : 'Patient Details' }}</span>
+                    </div>
 
                     <div class="row">
                         <div class="col-md-4 mb-3">
@@ -334,7 +509,7 @@
                                 value="{{ old('emergency_contact_name', $patient->emergency_contact_name ?? '') }}">
                         </div>
 
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-4 mb-0">
                             <label class="form-label">Emergency Contact Number</label>
                             <input type="text" name="emergency_contact_number" class="form-control"
                                 placeholder="09XXXXXXXXX / 639XXXXXXXXX / +639XXXXXXXXX"
@@ -343,56 +518,58 @@
                     </div>
                 </div>
 
-                <div class="section-card">
-    <h5 class="section-title">Address</h5>
-
-    <div class="row">
-        <div class="col-md-3 mb-3">
-            <label class="form-label">Region</label>
-            <select name="region" id="region" class="form-select" required>
-                <option value="">Select Region</option>
-            </select>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <label class="form-label">Province</label>
-            <select name="province" id="province" class="form-select" required disabled>
-                <option value="">Select Province</option>
-            </select>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <label class="form-label">City / Municipality</label>
-            <select name="city" id="city" class="form-select" required disabled>
-                <option value="">Select City / Municipality</option>
-            </select>
-        </div>
-
-        <div class="col-md-3 mb-3">
-            <label class="form-label">Barangay</label>
-            <select name="barangay" id="barangay" class="form-select" required disabled>
-                <option value="">Select Barangay</option>
-            </select>
-        </div>
-
-        <div class="col-md-12 mb-0">
-            <label class="form-label">Street / House No. / Unit</label>
-            <input
-                type="text"
-                name="address_line"
-                class="form-control"
-                value="{{ old('address_line') }}"
-                placeholder="Street / House No. / Unit"
-            >
-        </div>
-    </div>
-</div>
-
-                <div class="section-card">
-                    <h5 class="section-title">Appointment Details</h5>
+                <div class="booking-section">
+                    <div class="booking-section-head">
+                        <h5 class="booking-section-title">Address</h5>
+                        <span class="booking-section-note">Residential Information</span>
+                    </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Region</label>
+                            <select name="region" id="region" class="form-select" required>
+                                <option value="">Select Region</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Province</label>
+                            <select name="province" id="province" class="form-select" required disabled>
+                                <option value="">Select Province</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">City / Municipality</label>
+                            <select name="city" id="city" class="form-select" required disabled>
+                                <option value="">Select City / Municipality</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-3 mb-3">
+                            <label class="form-label">Barangay</label>
+                            <select name="barangay" id="barangay" class="form-select" required disabled>
+                                <option value="">Select Barangay</option>
+                            </select>
+                        </div>
+
+                        <div class="col-md-12 mb-0">
+                            <label class="form-label">Street / House No. / Unit</label>
+                            <input type="text" name="address_line" class="form-control"
+                                value="{{ old('address_line') }}"
+                                placeholder="Street / House No. / Unit">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="booking-section">
+                    <div class="booking-section-head">
+                        <h5 class="booking-section-title">Appointment Details</h5>
+                        <span class="booking-section-note">Service and Schedule</span>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-6 mb-3">
                             <label class="form-label">Dental Service</label>
                             <select name="service_id" id="service_id" class="form-select" required>
                                 <option value="">Select Service</option>
@@ -408,48 +585,65 @@
                             </select>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Preferred Dentist</label>
-                            <select name="preferred_dentist_id" id="preferred_dentist_id" class="form-select">
-                                <option value="">Any Available Dentist</option>
-                                @forelse(($dentists ?? []) as $dentist)
-                                    <option value="{{ $dentist->dentist_id }}"
-                                        {{ (string) old('preferred_dentist_id') === (string) $dentist->dentist_id ? 'selected' : '' }}>
-                                        Dentist #{{ $dentist->dentist_id }}
-                                    </option>
-                                @empty
-                                    <option value="" disabled>No available dentists found</option>
-                                @endforelse
-                            </select>
-                        </div>
-
-                        <div class="col-md-12 mb-3">
-                            <div class="meta-box">
-                                <h6>Service Information</h6>
-                                <div id="serviceMetaDescription">Select a service to view the description.</div>
-                                <div class="mt-2">
+                        <div class="col-lg-6 mb-3">
+                            <div class="booking-panel">
+                                <h6 class="booking-panel-title">Service Information</h6>
+                                <div id="serviceMetaDescription" class="booking-panel-text">
+                                    Select a service to view the description.
+                                </div>
+                                <div class="mt-3 booking-panel-text">
                                     <strong>Estimated Duration:</strong> <span id="serviceMetaDuration">-</span><br>
                                     <strong>Estimated Price:</strong> ₱<span id="serviceMetaPrice">-</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-md-12 mb-3">
+                        <div class="col-12 mb-3">
+                            <label class="form-label">Available Doctor</label>
+                            <input type="hidden" name="preferred_dentist_id" id="preferred_dentist_id"
+                                   value="{{ old('preferred_dentist_id') }}">
+
+                            <div class="doctor-any-card">
+                                <button type="button"
+                                        class="doctor-card w-100 {{ old('preferred_dentist_id') ? '' : 'active' }}"
+                                        data-dentist-value="">
+                                    <div class="doctor-card-title">Any Available Dentist</div>
+                                    <div class="doctor-card-subtitle">Let the clinic assign an available doctor for your selected service and time.</div>
+                                </button>
+                            </div>
+
+                            <div class="doctor-grid" id="doctorCardGrid">
+                                @forelse(($dentists ?? []) as $dentist)
+                                    <button type="button"
+                                            class="doctor-card {{ (string) old('preferred_dentist_id') === (string) $dentist->dentist_id ? 'active' : '' }}"
+                                            data-dentist-value="{{ $dentist->dentist_id }}">
+                                        <div class="doctor-card-title">Dentist #{{ $dentist->dentist_id }}</div>
+                                        <div class="doctor-card-subtitle">Select this doctor for your preferred appointment request.</div>
+                                    </button>
+                                @empty
+                                    <div class="booking-panel">
+                                        <div class="booking-panel-text">No available dentists found.</div>
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+
+                        <div class="col-12 mb-3">
                             <label class="form-label">Service-Specific Questions</label>
-                            <div id="dynamicQuestions" class="light-panel">
+                            <div id="dynamicQuestions" class="booking-panel">
                                 <p class="text-muted mb-0">Select a service to load additional questions.</p>
                             </div>
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <div class="col-lg-6 mb-3">
                             <input type="hidden" name="preferred_date" id="preferred_date"
                                    value="{{ old('preferred_date') }}"
                                    min="{{ now()->toDateString() }}">
 
-                            <div class="light-panel h-100">
+                            <div class="booking-calendaer-panel">
                                 <div class="calendar-toolbar">
                                     <button type="button" class="calendar-btn" id="prevMonthBtn">&lt;</button>
-                                    <h6 id="calendarMonthLabel">Select Date</h6>
+                                    <h6 id="calendarMonthLabel" class="calendar-month-label">Select Date</h6>
                                     <button type="button" class="calendar-btn" id="nextMonthBtn">&gt;</button>
                                 </div>
 
@@ -459,39 +653,38 @@
 
                                 <div id="bookingCalendarGrid"></div>
 
-                                <div class="mt-3">
+                                <div class="mt-3 booking-panel-text">
                                     <strong>Selected Date:</strong>
                                     <span id="selectedDateLabel">{{ old('preferred_date') ?: 'None' }}</span>
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6 mb-3">
-                            <div class="light-panel h-100">
-                                <label class="form-label fw-bold">Available Time Slots</label>
+                        <div class="col-lg-6 mb-3">
+                            <div class="booking-slot-panel h-100">
+                                <label class="form-label">Available Time Slots</label>
                                 <input type="hidden" name="preferred_start_time" id="preferred_start_time" value="{{ old('preferred_start_time') }}">
-                                <div id="timeSlotGrid" class="d-grid" style="grid-template-columns: repeat(4, 1fr); gap: 10px;"></div>
+                                <div id="timeSlotGrid" class="slot-grid"></div>
                                 <div id="slotFeedback" class="small text-muted mt-3">
                                     Select a service and date to load available times.
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-md-12 mb-0">
+                        <div class="col-12 mb-0">
                             <label class="form-label">Notes / Concerns</label>
                             <textarea name="notes" class="form-control" rows="4">{{ old('notes') }}</textarea>
                         </div>
                     </div>
                 </div>
 
-                <div class="submit-wrap">
-                    <button type="submit" class="review-btn">Review Booking</button>
+                <div class="booking-actions">
+                    <button type="submit" class="booking-primary-btn">Review Booking</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
 
 <div
     id="addressOldValues"
@@ -502,16 +695,11 @@
     hidden
 ></div>
 
-
-
-
-
-
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const serviceSelect = document.getElementById('service_id');
-    const dentistSelect = document.getElementById('preferred_dentist_id');
+    const dentistInput = document.getElementById('preferred_dentist_id');
+    const dentistCards = document.querySelectorAll('[data-dentist-value]');
     const dateInput = document.getElementById('preferred_date');
     const dynamicQuestions = document.getElementById('dynamicQuestions');
 
@@ -534,12 +722,12 @@ document.addEventListener('DOMContentLoaded', function () {
     const cityEl = document.getElementById('city');
     const barangayEl = document.getElementById('barangay');
 
-   const oldValuesEl = document.getElementById('addressOldValues');
+    const oldValuesEl = document.getElementById('addressOldValues');
 
-const oldRegion = oldValuesEl?.dataset.region || '';
-const oldProvince = oldValuesEl?.dataset.province || '';
-const oldCity = oldValuesEl?.dataset.city || '';
-const oldBarangay = oldValuesEl?.dataset.barangay || '';
+    const oldRegion = oldValuesEl?.dataset.region || '';
+    const oldProvince = oldValuesEl?.dataset.province || '';
+    const oldCity = oldValuesEl?.dataset.city || '';
+    const oldBarangay = oldValuesEl?.dataset.barangay || '';
 
     const addressData = {
         "NCR": {
@@ -656,7 +844,7 @@ const oldBarangay = oldValuesEl?.dataset.barangay || '';
 
     async function loadAvailableSlots() {
         const serviceId = serviceSelect.value;
-        const dentistId = dentistSelect.value;
+        const dentistId = dentistInput.value;
         const date = dateInput.value;
 
         hiddenTimeInput.value = '';
@@ -667,7 +855,7 @@ const oldBarangay = oldValuesEl?.dataset.barangay || '';
             return;
         }
 
-        let url = `{{ route('booking.slots') }}?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
+        let url = `{{ route('booking.available.slots') }}?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
         if (dentistId) {
             url += `&dentist_id=${encodeURIComponent(dentistId)}`;
         }
@@ -708,14 +896,14 @@ const oldBarangay = oldValuesEl?.dataset.barangay || '';
                     btn.dataset.value = normalizedHour;
 
                     btn.addEventListener('click', function () {
-                    document.querySelectorAll('.time-slot-btn').forEach(el => {
-                        el.classList.remove('active');
-                    });
+                        document.querySelectorAll('.time-slot-btn').forEach(el => {
+                            el.classList.remove('active');
+                        });
 
-                    btn.classList.add('active');
-                    hiddenTimeInput.value = normalizedHour.slice(0, 5);
-                });
-                                } else {
+                        btn.classList.add('active');
+                        hiddenTimeInput.value = normalizedHour.slice(0, 5);
+                    });
+                } else {
                     btn.classList.add('disabled');
                     btn.disabled = true;
                 }
@@ -858,6 +1046,15 @@ const oldBarangay = oldValuesEl?.dataset.barangay || '';
         populateSelect(barangayEl, addressData[region][province][city], 'Select Barangay', selectedBarangay);
     }
 
+    dentistCards.forEach(card => {
+        card.addEventListener('click', function () {
+            dentistCards.forEach(item => item.classList.remove('active'));
+            this.classList.add('active');
+            dentistInput.value = this.dataset.dentistValue || '';
+            loadAvailableSlots();
+        });
+    });
+
     regionEl.addEventListener('change', function () {
         loadProvinces(this.value);
     });
@@ -875,8 +1072,6 @@ const oldBarangay = oldValuesEl?.dataset.barangay || '';
         loadServiceQuestions();
         loadAvailableSlots();
     });
-
-    dentistSelect.addEventListener('change', loadAvailableSlots);
 
     prevMonthBtn.addEventListener('click', function () {
         currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);

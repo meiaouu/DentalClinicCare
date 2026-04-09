@@ -113,17 +113,17 @@ class LoginController extends Controller
         return str_starts_with($path, '/') && !str_starts_with($path, '//');
     }
 
-   protected function redirectByRole(): string
-{
-    $user = Auth::user();
-    $roleName = strtolower(trim($user?->role?->role_name ?? ''));
+    protected function redirectByRole(): string
+    {
+        $user = Auth::user();
+        $roleName = strtolower(trim($user?->role?->role_name ?? ''));
 
-    return match ($roleName) {
-        'admin' => route('admin.dashboard'),
-        'staff' => route('staff.dashboard'),
-        'dentist' => route('dentist.dashboard'),
-        'patient' => route('patient.dashboard'),
-        default => route('home'),
-    };
-}
+        return match ($roleName) {
+            'admin' => route('staff.dashboard'),
+            'staff' => route('staff.dashboard'),
+            'dentist' => route('home'),
+            'patient' => route('booking.create'),
+            default => route('home'),
+        };
+    }
 }

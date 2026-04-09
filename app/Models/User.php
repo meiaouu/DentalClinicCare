@@ -44,4 +44,8 @@ class User extends Authenticatable
     {
         return $this->hasOne(Patient::class, 'user_id', 'user_id');
     }
+    public function dentist()
+{
+    return $this->hasOne(\App\Models\Dentist::class, 'user_id', 'user_id');
+}
 }

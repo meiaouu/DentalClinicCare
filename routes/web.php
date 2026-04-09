@@ -54,7 +54,7 @@ Route::get('/booking/available-slots', [BookingController::class, 'availableSlot
 |--------------------------------------------------------------------------
 */
 
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', 'internal.redirect'])->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
 
@@ -65,6 +65,18 @@ Route::middleware('guest')->group(function () {
 Route::post('/logout', [LoginController::class, 'logout'])
     ->middleware('auth')
     ->name('logout');
+
+/*
+|--------------------------------------------------------------------------
+| Admin
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('admin.dashboard');
+    })->name('admin.dashboard');
+});
 
 /*
 |--------------------------------------------------------------------------
@@ -97,3 +109,99 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->group(function () {
     Route::post('/appointments/approve', [AppointmentApprovalController::class, 'approve'])->name('staff.appointments.approve');
     Route::post('/appointments/reject', [AppointmentApprovalController::class, 'reject'])->name('staff.appointments.reject');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Dentist
+|--------------------------------------------------------------------------
+*/
+
+use App\Http\Controllers\Dentist\DashboardController as DentistDashboardController;
+use App\Http\Controllers\Dentist\AvailabilityController as DentistAvailabilityController;
+
+Route::middleware(['auth', 'role:dentist'])
+    ->prefix('dentist')
+    ->name('dentist.')
+    ->group(function () {
+        Route::get('/dashboard', [DentistDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/availability', [DentistAvailabilityController::class, 'index'])->name('availability.index');
+        Route::post('/availability', [DentistAvailabilityController::class, 'storeOrUpdate'])->name('availability.store');
+
+        Route::post('/unavailable-dates', [DentistAvailabilityController::class, 'storeUnavailableDate'])->name('unavailable-dates.store');
+        Route::delete('/unavailable-dates/{unavailableDate}', [DentistAvailabilityController::class, 'destroyUnavailableDate'])->name('unavailable-dates.destroy');
+    });
+
+/*
+|--------------------------------------------------------------------------
+| Patient
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['auth', 'role:patient'])->prefix('patient')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('patient.dashboard');
+    })->name('patient.dashboard');
+});
+
+
+
+Route::middleware('internal.redirect')->group(function () {
+
+    Route::get('/', function () {
+        $clinic = \App\Models\ClinicSetting::first();
+
+        $services = \App\Models\Service::where('is_active', true)
+            ->orderBy('service_name')
+            ->get(['service_id', 'service_name', 'description']);
+
+        return view('public.home', compact('clinic', 'services'));
+    })->name('home');
+
+    Route::get('/book', [BookingController::class, 'entry'])->name('booking.entry');
+    Route::get('/book/guest', [BookingController::class, 'guestForm'])->name('booking.guest.form');
+
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Route::get('/force-logout', function () {
+    \Illuminate\Support\Facades\Auth::logout();
+    session()->invalidate();
+    session()->regenerateToken();
+    return redirect('/');
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
