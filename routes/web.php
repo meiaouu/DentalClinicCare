@@ -132,6 +132,61 @@ Route::middleware(['auth', 'role:dentist'])
         Route::delete('/unavailable-dates/{unavailableDate}', [DentistAvailabilityController::class, 'destroyUnavailableDate'])->name('unavailable-dates.destroy');
     });
 
+Route::middleware(['auth', 'role:dentist'])
+    ->prefix('dentist')
+    ->name('dentist.')
+    ->group(function () {
+        Route::get('/dashboard', [DentistDashboardController::class, 'index'])->name('dashboard');
+
+        Route::get('/schedule', function () {
+            return view('dentist.schedule.index');
+        })->name('schedule.index');
+
+        Route::get('/patients/today', function () {
+            return view('dentist.patients.today');
+        })->name('patients.today');
+
+        Route::get('/patients/charts', function () {
+            return view('dentist.patients.charts');
+        })->name('patients.charts');
+
+        Route::get('/treatments', function () {
+            return view('dentist.treatments.index');
+        })->name('treatments.index');
+
+        Route::get('/attachments', function () {
+            return view('dentist.attachments.index');
+        })->name('attachments.index');
+
+        Route::get('/follow-ups', function () {
+            return view('dentist.followups.index');
+        })->name('followups.index');
+
+        Route::get('/profile', function () {
+            return view('dentist.profile.edit');
+        })->name('profile.edit');
+
+        Route::get('/availability', [DentistAvailabilityController::class, 'index'])->name('availability.index');
+        Route::post('/availability', [DentistAvailabilityController::class, 'storeOrUpdate'])->name('availability.store');
+
+        Route::post('/unavailable-dates', [DentistAvailabilityController::class, 'storeUnavailableDate'])->name('unavailable-dates.store');
+        Route::delete('/unavailable-dates/{unavailableDate}', [DentistAvailabilityController::class, 'destroyUnavailableDate'])->name('unavailable-dates.destroy');
+    });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 /*
 |--------------------------------------------------------------------------
 | Patient
