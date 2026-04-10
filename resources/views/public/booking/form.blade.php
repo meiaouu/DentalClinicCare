@@ -390,6 +390,49 @@
             width: 100%;
         }
     }
+
+    .calendar-date-btn {
+    min-height: 64px;
+    border-radius: 12px;
+    border: 1px solid #dbe4ea;
+    background: #fff;
+    color: #334155;
+    font-weight: 700;
+    position: relative;
+    padding: 8px;
+}
+
+.calendar-date-btn.available {
+    background: #ffffff;
+}
+
+.calendar-date-btn.selected {
+    background: #0f9d8a;
+    border-color: #0f9d8a;
+    color: #ffffff;
+}
+
+.calendar-date-btn.unavailable {
+    background: #f8fafc;
+    color: #94a3b8;
+    border-color: #e2e8f0;
+    opacity: 0.75;
+    cursor: not-allowed;
+}
+
+.calendar-date-tag {
+    display: inline-flex;
+    margin-top: 6px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    font-size: 10px;
+    font-weight: 800;
+}
+
+.calendar-date-tag.unavailable {
+    background: #fee2e2;
+    color: #b91c1c;
+}
 </style>
 
 <div class="booking-page">
@@ -753,6 +796,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     let selectedDate = dateInput.value ? new Date(dateInput.value + 'T00:00:00') : null;
+    let monthAvailabilityMap = {};
 
     function formatDateLocal(date) {
         const year = date.getFullYear();
@@ -842,6 +886,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function formatHourLabel(time24) {
+        const [hour, minute] = time24.split(':');
+        const h = parseInt(hour, 10);
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        const displayHour = ((h + 11) % 12 + 1).toString().padStart(2, '0');
+        return `${suffix} ${displayHour}:${minute}`;
+    }
+
     async function loadAvailableSlots() {
         const serviceId = serviceSelect.value;
         const dentistId = dentistInput.value;
@@ -921,14 +973,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function formatHourLabel(time24) {
-        const [hour, minute] = time24.split(':');
-        const h = parseInt(hour, 10);
-        const suffix = h >= 12 ? 'PM' : 'AM';
-        const displayHour = ((h + 11) % 12 + 1).toString().padStart(2, '0');
-        return `${suffix} ${displayHour}:${minute}`;
-    }
-
     function renderCalendar() {
         calendarGrid.innerHTML = '';
 
@@ -954,37 +998,81 @@ document.addEventListener('DOMContentLoaded', function () {
             const cellDate = new Date(year, month, day);
             cellDate.setHours(0, 0, 0, 0);
 
+            const formatted = formatDateLocal(cellDate);
+            const dayStatus = monthAvailabilityMap[formatted] || null;
+
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'btn btn-sm';
-            btn.textContent = day;
+            btn.className = 'calendar-date-btn';
+            btn.innerHTML = `<div>${day}</div>`;
 
             const isPast = cellDate < today;
             const isSelected = selectedDate && formatDateLocal(cellDate) === formatDateLocal(selectedDate);
+            const isUnavailable = isPast || (dayStatus && dayStatus.clickable === false);
 
-            if (isPast) {
-                btn.classList.add('btn-light');
+            if (isUnavailable) {
+                btn.classList.add('unavailable');
                 btn.disabled = true;
-                btn.style.opacity = '0.5';
-            } else if (isSelected) {
-                btn.classList.add('btn-primary');
+
+                const tag = document.createElement('div');
+                tag.className = 'calendar-date-tag unavailable';
+                tag.textContent = 'Unavailable';
+                btn.appendChild(tag);
             } else {
-                btn.classList.add('btn-outline-secondary');
+                btn.classList.add('available');
             }
 
-            btn.addEventListener('click', function () {
-                selectedDate = cellDate;
-                const formatted = formatDateLocal(cellDate);
+            if (isSelected && !isUnavailable) {
+                btn.classList.add('selected');
+            }
 
-                dateInput.value = formatted;
-                selectedDateLabel.textContent = formatted;
-
-                renderCalendar();
-                loadAvailableSlots();
-            });
+            if (!isUnavailable) {
+                btn.addEventListener('click', function () {
+                    selectedDate = cellDate;
+                    dateInput.value = formatted;
+                    selectedDateLabel.textContent = formatted;
+                    hiddenTimeInput.value = '';
+                    renderCalendar();
+                    loadAvailableSlots();
+                });
+            }
 
             calendarGrid.appendChild(btn);
         }
+    }
+
+    async function loadCalendarAvailability() {
+        const serviceId = serviceSelect.value;
+        const dentistId = dentistInput.value;
+        const month = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
+
+        monthAvailabilityMap = {};
+
+        if (!serviceId) {
+            renderCalendar();
+            return;
+        }
+
+        let url = `{{ route('booking.calendar.availability') }}?month=${encodeURIComponent(month)}&service_id=${encodeURIComponent(serviceId)}`;
+        if (dentistId) {
+            url += `&dentist_id=${encodeURIComponent(dentistId)}`;
+        }
+
+        try {
+            const response = await fetch(url);
+
+            if (!response.ok) {
+                throw new Error('Failed to load calendar availability');
+            }
+
+            const result = await response.json();
+            monthAvailabilityMap = result?.dates || {};
+        } catch (error) {
+            console.error(error);
+            monthAvailabilityMap = {};
+        }
+
+        renderCalendar();
     }
 
     function resetSelect(selectEl, placeholder) {
@@ -1047,11 +1135,19 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     dentistCards.forEach(card => {
-        card.addEventListener('click', function () {
+        card.addEventListener('click', async function () {
             dentistCards.forEach(item => item.classList.remove('active'));
             this.classList.add('active');
             dentistInput.value = this.dataset.dentistValue || '';
-            loadAvailableSlots();
+
+            selectedDate = null;
+            dateInput.value = '';
+            selectedDateLabel.textContent = 'None';
+            hiddenTimeInput.value = '';
+            timeSlotGrid.innerHTML = '';
+            slotFeedback.textContent = 'Select a service and date to load available times.';
+
+            await loadCalendarAvailability();
         });
     });
 
@@ -1067,50 +1163,65 @@ document.addEventListener('DOMContentLoaded', function () {
         loadBarangays(regionEl.value, provinceEl.value, this.value);
     });
 
-    serviceSelect.addEventListener('change', function () {
+    serviceSelect.addEventListener('change', async function () {
         updateServiceMetaFromOption();
-        loadServiceQuestions();
-        loadAvailableSlots();
+        await loadServiceQuestions();
+
+        selectedDate = null;
+        dateInput.value = '';
+        selectedDateLabel.textContent = 'None';
+        hiddenTimeInput.value = '';
+        timeSlotGrid.innerHTML = '';
+        slotFeedback.textContent = 'Select a service and date to load available times.';
+
+        await loadCalendarAvailability();
     });
 
-    prevMonthBtn.addEventListener('click', function () {
+    prevMonthBtn.addEventListener('click', async function () {
         currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-        renderCalendar();
+        await loadCalendarAvailability();
     });
 
-    nextMonthBtn.addEventListener('click', function () {
+    nextMonthBtn.addEventListener('click', async function () {
         currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-        renderCalendar();
+        await loadCalendarAvailability();
     });
 
-    updateServiceMetaFromOption();
-    loadServiceQuestions();
-    renderCalendar();
+    async function initializeBookingCalendar() {
+        updateServiceMetaFromOption();
+        await loadServiceQuestions();
+        await loadCalendarAvailability();
 
-    loadRegions();
+        loadRegions();
 
-    if (oldRegion) {
-        loadProvinces(oldRegion, oldProvince);
-    } else {
-        resetSelect(provinceEl, 'Select Province');
+        if (oldRegion) {
+            loadProvinces(oldRegion, oldProvince);
+        } else {
+            resetSelect(provinceEl, 'Select Province');
+        }
+
+        if (oldRegion && oldProvince) {
+            loadCities(oldRegion, oldProvince, oldCity);
+        } else {
+            resetSelect(cityEl, 'Select City / Municipality');
+        }
+
+        if (oldRegion && oldProvince && oldCity) {
+            loadBarangays(oldRegion, oldProvince, oldCity, oldBarangay);
+        } else {
+            resetSelect(barangayEl, 'Select Barangay');
+        }
+
+        if (dateInput.value) {
+            selectedDateLabel.textContent = dateInput.value;
+            await loadAvailableSlots();
+        }
     }
 
-    if (oldRegion && oldProvince) {
-        loadCities(oldRegion, oldProvince, oldCity);
-    } else {
-        resetSelect(cityEl, 'Select City / Municipality');
-    }
-
-    if (oldRegion && oldProvince && oldCity) {
-        loadBarangays(oldRegion, oldProvince, oldCity, oldBarangay);
-    } else {
-        resetSelect(barangayEl, 'Select Barangay');
-    }
-
-    if (dateInput.value) {
-        selectedDateLabel.textContent = dateInput.value;
-        loadAvailableSlots();
-    }
+    initializeBookingCalendar().catch(function (error) {
+        console.error('Booking calendar initialization failed:', error);
+        renderCalendar();
+    });
 });
 </script>
 @endsection

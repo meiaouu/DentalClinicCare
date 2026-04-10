@@ -47,6 +47,11 @@ Route::get('/booking/services/{service}/meta', [BookingController::class, 'servi
 Route::get('/booking/services/{service}/questions', [BookingController::class, 'serviceQuestions'])->name('booking.service.questions');
 Route::get('/booking/available-dentists', [BookingController::class, 'availableDentists'])->name('booking.available.dentists');
 Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('booking.available.slots');
+Route::get('/booking/calendar-availability', [BookingController::class, 'calendarAvailability'])
+    ->name('booking.calendar.availability');
+
+
+
 
 /*
 |--------------------------------------------------------------------------

@@ -331,4 +331,85 @@ class BookingAvailabilityService
     {
         return strlen($time) === 5 ? $time . ':00' : $time;
     }
+
+    public function getCalendarAvailabilityForMonth(string $month, int $serviceId, ?int $dentistId = null): array
+{
+    $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+    $endOfMonth = $startOfMonth->copy()->endOfMonth();
+    $today = now()->startOfDay();
+
+    $results = [];
+    $cursor = $startOfMonth->copy();
+
+    while ($cursor->lte($endOfMonth)) {
+        $date = $cursor->toDateString();
+
+        if ($cursor->lt($today)) {
+            $results[$date] = [
+                'status' => 'unavailable',
+                'clickable' => false,
+                'label' => 'Unavailable',
+            ];
+
+            $cursor->addDay();
+            continue;
+        }
+
+        $results[$date] = $this->buildCalendarDayStatus($date, $serviceId, $dentistId);
+        $cursor->addDay();
+    }
+
+    return $results;
+}
+
+protected function buildCalendarDayStatus(string $date, int $serviceId, ?int $dentistId = null): array
+{
+    $service = Service::query()->find($serviceId);
+
+    if (!$service || (int) $service->estimated_duration_minutes <= 0) {
+        return [
+            'status' => 'unavailable',
+            'clickable' => false,
+            'label' => 'Unavailable',
+        ];
+    }
+
+    $daySchedule = $this->getClinicDaySchedule($date);
+    $clinic = ClinicSetting::query()->first();
+
+    if (!$daySchedule || !$clinic || !$daySchedule['is_open']) {
+        return [
+            'status' => 'unavailable',
+            'clickable' => false,
+            'label' => 'Unavailable',
+        ];
+    }
+
+    $duration = (int) $service->estimated_duration_minutes;
+    $interval = max(5, (int) $clinic->slot_interval_minutes);
+
+    $open = Carbon::parse($date . ' ' . $daySchedule['open_time']);
+    $close = Carbon::parse($date . ' ' . $daySchedule['close_time']);
+    $cursor = $open->copy();
+
+    while ($cursor->copy()->addMinutes($duration) <= $close) {
+        if ($this->isRequestedSlotAvailable($date, $cursor->format('H:i:s'), $serviceId, $dentistId)) {
+            return [
+                'status' => 'available',
+                'clickable' => true,
+                'label' => 'Available',
+            ];
+        }
+
+        $cursor->addMinutes($interval);
+    }
+
+    return [
+        'status' => 'unavailable',
+        'clickable' => false,
+        'label' => 'Unavailable',
+    ];
+}
+
+
 }

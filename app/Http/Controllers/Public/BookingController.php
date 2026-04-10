@@ -418,4 +418,30 @@ class BookingController extends Controller
 
         return json_encode($payload, JSON_UNESCAPED_UNICODE);
     }
+
+
+
+    public function calendarAvailability(Request $request): JsonResponse
+{
+    $validated = $request->validate([
+        'month' => ['required', 'date_format:Y-m'],
+        'service_id' => ['required', 'integer', 'exists:services,service_id'],
+        'dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
+    ]);
+
+    $month = $validated['month'];
+    $serviceId = (int) $validated['service_id'];
+    $dentistId = !empty($validated['dentist_id']) ? (int) $validated['dentist_id'] : null;
+
+    return response()->json([
+        'dates' => $this->availabilityService->getCalendarAvailabilityForMonth(
+            $month,
+            $serviceId,
+            $dentistId
+        ),
+    ]);
 }
+
+}
+
+

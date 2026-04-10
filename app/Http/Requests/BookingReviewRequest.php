@@ -6,6 +6,7 @@ use App\Models\Service;
 use App\Services\Booking\PhoneNumberService;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
+use App\Services\Booking\BookingAvailabilityService;
 
 class BookingReviewRequest extends FormRequest
 {
@@ -90,6 +91,40 @@ class BookingReviewRequest extends FormRequest
             if (!$service || (int) $service->is_active !== 1) {
                 $validator->errors()->add('service_id', 'Selected service is not available.');
             }
+
+            $serviceId = (int) $this->input('service_id');
+$date = (string) $this->input('preferred_date');
+$startTime = (string) $this->input('preferred_start_time');
+$dentistId = $this->filled('preferred_dentist_id')
+    ? (int) $this->input('preferred_dentist_id')
+    : null;
+
+if ($serviceId && $date && $startTime) {
+    $availabilityService = app(BookingAvailabilityService::class);
+
+    try {
+        $normalizedTime = strlen($startTime) === 5 ? $startTime . ':00' : $startTime;
+
+        $isAvailable = $availabilityService->isRequestedSlotAvailable(
+            $date,
+            $normalizedTime,
+            $serviceId,
+            $dentistId
+        );
+
+        if (!$isAvailable) {
+            $validator->errors()->add(
+                'preferred_date',
+                'The selected date and time are not available for booking.'
+            );
+        }
+    } catch (\Throwable $e) {
+        $validator->errors()->add(
+            'preferred_date',
+            'The selected date and time are not available for booking.'
+        );
+    }
+}
         });
     }
 }
