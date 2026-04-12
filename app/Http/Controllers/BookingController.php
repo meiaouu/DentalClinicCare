@@ -271,7 +271,7 @@ class BookingController extends Controller
         );
     }
 
-    public function availableSlots(Request $request): \Illuminate\Http\JsonResponse
+    public function availableSlots(Request $request): JsonResponse
 {
     $validated = $request->validate([
         'date' => ['required', 'date'],
@@ -279,13 +279,13 @@ class BookingController extends Controller
         'dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
     ]);
 
+    $date = $validated['date'];
+    $serviceId = (int) $validated['service_id'];
+    $dentistId = !empty($validated['dentist_id']) ? (int) $validated['dentist_id'] : null;
+
     return response()->json([
-        'clinic_hours' => $this->availabilityService->getClinicHoursForDate($validated['date']),
-        'available_slots' => $this->availabilityService->getAvailableSlots(
-            $validated['date'],
-            (int) $validated['service_id'],
-            !empty($validated['dentist_id']) ? (int) $validated['dentist_id'] : null
-        ),
+        'available_slots' => $this->availabilityService->getAvailableSlots($date, $serviceId, $dentistId),
+        'clinic_hours' => $this->availabilityService->getClinicHoursForDate($date),
     ]);
 }
 

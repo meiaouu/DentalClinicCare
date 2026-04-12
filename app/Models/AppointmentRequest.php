@@ -33,6 +33,10 @@ class AppointmentRequest extends Model
         'preferred_start_time',
         'notes',
         'request_status',
+        'reviewed_by_user_id',
+        'reviewed_at',
+        'converted_appointment_id',
+        'staff_notes',
     ];
 
     protected function casts(): array
@@ -41,6 +45,7 @@ class AppointmentRequest extends Model
             'is_guest' => 'boolean',
             'birth_date' => 'date',
             'preferred_date' => 'date',
+            'reviewed_at' => 'datetime',
         ];
     }
 
@@ -62,5 +67,20 @@ class AppointmentRequest extends Model
     public function preferredDentist(): BelongsTo
     {
         return $this->belongsTo(Dentist::class, 'preferred_dentist_id', 'dentist_id');
+    }
+
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by_user_id', 'id');
+    }
+
+    public function convertedAppointment(): BelongsTo
+    {
+        return $this->belongsTo(Appointment::class, 'converted_appointment_id', 'appointment_id');
+    }
+
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(AppointmentStatusLog::class, 'request_id', 'request_id');
     }
 }

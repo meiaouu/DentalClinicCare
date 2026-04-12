@@ -33,4 +33,8 @@ class Dentist extends Model
     {
         return $this->belongsTo(User::class, 'user_id', 'user_id');
     }
+    public function dateOverrides()
+{
+    return $this->hasMany(\App\Models\DentistDateOverride::class, 'dentist_id', 'dentist_id');
+}
 }

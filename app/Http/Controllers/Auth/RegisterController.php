@@ -69,7 +69,7 @@ class RegisterController extends Controller
                     'contact_number' => $normalizedContact,
                     'email' => $validated['email'],
                     'username' => $validated['username'],
-                    'password_hash' => Hash::make($validated['password']),
+                    'password' => Hash::make($validated['password']),
                     'is_active' => 1,
                 ]);
 

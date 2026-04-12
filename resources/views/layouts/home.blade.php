@@ -4,45 +4,45 @@
     @include('layouts.partials.public-navbar', ['clinic' => $clinic])
 
     <section id="home" class="relative min-h-screen overflow-hidden">
-        <div class="absolute inset-0">
-            <img
-                src="https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=1600&q=80"
-                alt="Dental clinic"
-                class="w-full h-full object-cover"
-            >
-            <div class="absolute inset-0 bg-gradient-to-r from-[#09111D]/95 via-[#09111D]/75 to-[#09111D]/35"></div>
+
+    <!-- Background Image -->
+    <div class="absolute inset-0">
+        <img
+            src="{{ asset('images/dentalimg.jpg') }}"
+            alt="Dental clinic"
+            class="w-full h-full object-cover"
+        >
+    </div>
+
+    <!-- Dark Overlay -->
+    <div class="absolute inset-0 bg-slate-900/60"></div>
+
+    <!-- Content -->
+    <div class="relative z-10 max-w-6xl mx-auto px-6 py-40 text-white">
+        <p class="text-lg mb-4 text-slate-200">Professional Dental Care</p>
+
+        <h1 class="text-5xl font-extrabold leading-tight mb-6">
+            Healthy Smiles<br>Start Here
+        </h1>
+
+        <p class="max-w-xl text-lg text-slate-200 mb-8">
+            Book appointments easily, explore services, and receive reliable care.
+        </p>
+
+        <div class="flex gap-4 flex-wrap">
+            <a href="{{ route('booking.entry') }}"
+               class="px-6 py-3 bg-blue-600 rounded-full font-semibold">
+                Book Now
+            </a>
+
+            <a href="#services"
+               class="px-6 py-3 border border-white rounded-full font-semibold">
+                View Services
+            </a>
         </div>
+    </div>
 
-        <div class="relative max-w-6xl mx-auto px-4 lg:px-6 pt-44 pb-24 min-h-screen flex items-center">
-            <div class="max-w-2xl text-white">
-                <p class="text-xl md:text-2xl mb-4 tracking-wide text-slate-200">
-                    Professional Dental Care
-                </p>
-
-                <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-6">
-                    Healthy Smiles<br>
-                    Start Here
-                </h1>
-
-                <p class="text-base md:text-lg text-slate-200 max-w-xl mb-10">
-                    Book appointments easily, explore dental services, and receive reliable care
-                    from a clinic that values comfort, safety, and healthy smiles.
-                </p>
-
-                <div class="flex flex-wrap items-center gap-4">
-                    <a href="{{ route('booking.create') }}"
-                       class="px-7 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition shadow-lg">
-                        Book Now
-                    </a>
-
-                    <a href="#services"
-                       class="px-7 py-3 rounded-full border border-white/70 text-white font-semibold hover:bg-white hover:text-slate-900 transition">
-                        View All Services
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
+</section>
 
     <section id="services" class="py-24 bg-white scroll-mt-28">
         <div class="max-w-6xl mx-auto px-4 lg:px-6">
