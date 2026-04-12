@@ -110,9 +110,6 @@ Route::middleware(['auth', 'role:staff'])->prefix('staff')->group(function () {
     Route::get('/clinic-schedule', [ClinicScheduleController::class, 'index'])->name('staff.clinic-schedule.index');
     Route::post('/clinic-schedule/open-date', [ClinicScheduleController::class, 'openSpecificDate'])->name('staff.clinic-schedule.open-date');
     Route::post('/clinic-schedule/block', [ClinicScheduleController::class, 'blockDateOrTime'])->name('staff.clinic-schedule.block');
-
-    Route::post('/appointments/approve', [AppointmentApprovalController::class, 'approve'])->name('staff.appointments.approve');
-    Route::post('/appointments/reject', [AppointmentApprovalController::class, 'reject'])->name('staff.appointments.reject');
 });
 
 /*

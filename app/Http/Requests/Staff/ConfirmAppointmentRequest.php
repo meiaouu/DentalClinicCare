@@ -15,9 +15,9 @@ class ConfirmAppointmentRequest extends FormRequest
     {
         return [
             'dentist_id' => ['required', 'exists:dentists,dentist_id'],
-            'appointment_date' => ['required', 'date'],
+            'appointment_date' => ['required', 'date', 'after_or_equal:today'],
             'start_time' => ['required', 'date_format:H:i'],
-            'remarks' => ['nullable', 'string'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

@@ -7,9 +7,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class AppointmentStatusLog extends Model
 {
-    public $timestamps = false;
+    protected $table = 'appointment_status_logs';
+    protected $primaryKey = 'status_log_id';
 
-    protected $primaryKey = 'log_id';
+    public $timestamps = false;
 
     protected $fillable = [
         'appointment_id',
@@ -20,19 +21,16 @@ class AppointmentStatusLog extends Model
         'changed_at',
     ];
 
-    protected function casts(): array
-    {
-        return [
-            'changed_at' => 'datetime',
-        ];
-    }
+    protected $casts = [
+        'changed_at' => 'datetime',
+    ];
 
     public function appointment(): BelongsTo
     {
         return $this->belongsTo(Appointment::class, 'appointment_id', 'appointment_id');
     }
 
-    public function changedBy(): BelongsTo
+    public function changedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'changed_by', 'user_id');
     }

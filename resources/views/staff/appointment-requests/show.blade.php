@@ -32,7 +32,18 @@
 
     $displayPreferredDentist = $requestItem->preferredDentist?->user?->full_name ?? 'Clinic will assign';
     $hasConvertedAppointment = !empty($requestItem->convertedAppointment);
-    $preferredStartTime = \Illuminate\Support\Str::of($requestItem->preferred_start_time)->substr(0, 5);
+
+    $requestedDate = !empty($requestItem->preferred_date)
+        ? \Carbon\Carbon::parse($requestItem->preferred_date)->toDateString()
+        : '';
+
+    $requestedTime = !empty($requestItem->preferred_start_time)
+        ? \Illuminate\Support\Str::of($requestItem->preferred_start_time)->substr(0, 5)
+        : '';
+
+    $oldConfirmDate = old('appointment_date', $requestedDate);
+    $oldConfirmTime = old('start_time', $requestedTime);
+    $oldConfirmDentistId = old('dentist_id', (string) ($requestItem->preferred_dentist_id ?? ''));
 @endphp
 
 <style>
@@ -135,8 +146,8 @@
                     <div class="summary-row"><div class="summary-key">Contact Number</div><div class="summary-value">{{ $displayContact }}</div></div>
                     <div class="summary-row"><div class="summary-key">Email</div><div class="summary-value">{{ $displayEmail }}</div></div>
                     <div class="summary-row"><div class="summary-key">Service</div><div class="summary-value">{{ $requestItem->service?->service_name ?? '—' }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Requested Date</div><div class="summary-value">{{ $requestItem->preferred_date ?? '—' }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Requested Time</div><div class="summary-value">{{ $requestItem->preferred_start_time ?? '—' }}</div></div>
+                    <div class="summary-row"><div class="summary-key">Requested Date</div><div class="summary-value">{{ $requestedDate ?: '—' }}</div></div>
+                    <div class="summary-row"><div class="summary-key">Requested Time</div><div class="summary-value">{{ $requestedTime ?: '—' }}</div></div>
                     <div class="summary-row"><div class="summary-key">Preferred Dentist</div><div class="summary-value">{{ $displayPreferredDentist }}</div></div>
                     <div class="summary-row"><div class="summary-key">Patient Concerns</div><div class="summary-value">{{ $notesOrConcerns ?: '—' }}</div></div>
                 </div>
@@ -201,9 +212,9 @@
                     <form method="POST" action="{{ route('staff.appointment-requests.confirm', $requestItem->request_id) }}" id="confirmAppointmentForm">
                         @csrf
 
-                        <input type="hidden" name="dentist_id" id="confirm_dentist_id" value="{{ old('dentist_id', $requestItem->preferred_dentist_id) }}">
-                        <input type="hidden" name="appointment_date" id="confirm_appointment_date" value="{{ old('appointment_date', $requestItem->preferred_date) }}">
-                        <input type="hidden" name="start_time" id="confirm_start_time" value="{{ old('start_time', $preferredStartTime) }}">
+                        <input type="hidden" name="dentist_id" id="confirm_dentist_id" value="{{ $oldConfirmDentistId }}">
+                        <input type="hidden" name="appointment_date" id="confirm_appointment_date" value="{{ $oldConfirmDate }}">
+                        <input type="hidden" name="start_time" id="confirm_start_time" value="{{ $oldConfirmTime }}">
 
                         <div class="summary-list" style="margin-bottom:14px;">
                             <div class="summary-row">
@@ -212,11 +223,11 @@
                             </div>
                             <div class="summary-row">
                                 <div class="summary-key">Approved Date</div>
-                                <div class="summary-value" id="approvedDateLabel">{{ old('appointment_date', $requestItem->preferred_date) ?: '—' }}</div>
+                                <div class="summary-value" id="approvedDateLabel">{{ $oldConfirmDate ?: '—' }}</div>
                             </div>
                             <div class="summary-row">
                                 <div class="summary-key">Approved Time</div>
-                                <div class="summary-value" id="approvedTimeLabel">{{ old('start_time', $preferredStartTime) ?: '—' }}</div>
+                                <div class="summary-value" id="approvedTimeLabel">{{ $oldConfirmTime ?: '—' }}</div>
                             </div>
                         </div>
 
@@ -236,7 +247,7 @@
                                         <option
                                             value="{{ $dentist->dentist_id }}"
                                             data-label="{{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}"
-                                            @selected((string) old('dentist_id', $requestItem->preferred_dentist_id) === (string) $dentist->dentist_id)
+                                            @selected((string) $oldConfirmDentistId === (string) $dentist->dentist_id)
                                         >
                                             {{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}
                                         </option>
@@ -256,7 +267,7 @@
                             </div>
                             <div id="staffCalendarGrid"></div>
                             <div class="helper-text" style="margin-top:12px;">
-                                Selected date: <strong id="calendarSelectedDateText">{{ old('appointment_date', $requestItem->preferred_date) ?: 'None' }}</strong>
+                                Selected date: <strong id="calendarSelectedDateText">{{ $oldConfirmDate ?: 'None' }}</strong>
                             </div>
                         </div>
 
@@ -292,7 +303,7 @@
                                 @foreach($dentists as $dentist)
                                     <option
                                         value="{{ $dentist->dentist_id }}"
-                                        @selected((string) old('dentist_id', $requestItem->preferred_dentist_id) === (string) $dentist->dentist_id)
+                                        @selected((string) $oldConfirmDentistId === (string) $dentist->dentist_id)
                                     >
                                         {{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}
                                     </option>
@@ -302,12 +313,12 @@
 
                         <div class="form-group">
                             <label class="form-label">New Appointment Date</label>
-                            <input type="date" name="appointment_date" class="form-control" value="{{ old('appointment_date', $requestItem->preferred_date) }}" required>
+                            <input type="date" name="appointment_date" class="form-control" value="{{ $oldConfirmDate }}" required>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">New Start Time</label>
-                            <input type="time" name="start_time" class="form-control" value="{{ old('start_time', $preferredStartTime) }}" required>
+                            <input type="time" name="start_time" class="form-control" value="{{ $oldConfirmTime }}" required>
                         </div>
 
                         <div class="form-group">
@@ -349,10 +360,8 @@
         $requestDefaults = [
             'dentistId' => (string) ($requestItem->preferred_dentist_id ?? ''),
             'dentistLabel' => $displayPreferredDentist,
-            'date' => !empty($requestItem->preferred_date)
-                ? \Carbon\Carbon::parse($requestItem->preferred_date)->toDateString()
-                : '',
-            'time' => (string) $preferredStartTime,
+            'date' => $requestedDate,
+            'time' => (string) $requestedTime,
             'serviceId' => (int) ($requestItem->service_id ?? 0),
         ];
     @endphp
@@ -362,12 +371,11 @@
         data-request-defaults='@json($requestDefaults)'
         hidden
     ></div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const requestDefaultsEl = document.getElementById('requestDefaultsData');
-const requestDefaults = JSON.parse(
-    requestDefaultsEl?.dataset.requestDefaults || '{}'
-);
+    const requestDefaults = JSON.parse(requestDefaultsEl?.dataset.requestDefaults || '{}');
 
     const confirmDentistId = document.getElementById('confirm_dentist_id');
     const confirmAppointmentDate = document.getElementById('confirm_appointment_date');
@@ -393,8 +401,15 @@ const requestDefaults = JSON.parse(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    let selectedDate = confirmAppointmentDate.value ? new Date(confirmAppointmentDate.value + 'T00:00:00') : null;
+    let currentMonth = confirmAppointmentDate.value
+        ? new Date(confirmAppointmentDate.value + 'T00:00:00')
+        : new Date(today.getFullYear(), today.getMonth(), 1);
+
+    currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+
+    let selectedDate = confirmAppointmentDate.value
+        ? new Date(confirmAppointmentDate.value + 'T00:00:00')
+        : null;
 
     function normalizeTime(value) {
         if (!value) return '';
@@ -460,6 +475,10 @@ const requestDefaults = JSON.parse(
         }
 
         selectedDate = requestDefaults.date ? new Date(requestDefaults.date + 'T00:00:00') : null;
+        currentMonth = selectedDate
+            ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
+            : new Date(today.getFullYear(), today.getMonth(), 1);
+
         renderCalendar();
         updateSummaryLabels();
         loadAvailableSlots();
@@ -611,6 +630,7 @@ const requestDefaults = JSON.parse(
 
     updateSummaryLabels();
     renderCalendar();
+
     if (confirmAppointmentDate.value) {
         loadAvailableSlots();
     }

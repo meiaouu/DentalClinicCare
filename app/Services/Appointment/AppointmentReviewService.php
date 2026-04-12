@@ -2,127 +2,185 @@
 
 namespace App\Services\Appointment;
 
+use App\Models\Appointment;
+use App\Models\AppointmentRequest;
+use App\Models\AppointmentStatusLog;
+use App\Models\ClinicSetting;
+use App\Models\Service;
+use App\Services\Booking\BookingAvailabilityService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use RuntimeException;
 
-class AppointmentReviewService
+class AppointmentRequestReviewService
 {
-    protected string $sessionKey = 'booking_review';
+    public function __construct(
+        protected BookingAvailabilityService $availabilityService,
+        protected ReminderGenerationService $reminderGenerationService
+    ) {
+    }
 
-    public function store(array $validated): string
-    {
-        $token = Str::uuid()->toString();
+    public function confirm(
+        AppointmentRequest $requestModel,
+        int $dentistId,
+        string $appointmentDate,
+        string $startTime,
+        ?string $staffNotes = null
+    ): Appointment {
+        if ($requestModel->request_status === 'converted_to_appointment') {
+            throw new RuntimeException('Request already converted.');
+        }
 
-        Session::put($this->buildTokenKey($token), [
-            'data' => $validated,
-            'created_at' => now()->toDateTimeString(),
-            'expires_at' => now()->addMinutes(30)->toDateTimeString(),
+        if (!in_array($requestModel->request_status, ['pending', 'under_review', 'rescheduled'], true)) {
+            throw new RuntimeException('Request cannot be confirmed.');
+        }
+
+        $service = Service::findOrFail($requestModel->service_id);
+        $normalizedStart = $this->normalizeTime($startTime);
+
+        $isAvailable = $this->availabilityService->isRequestedSlotAvailable(
+            $appointmentDate,
+            $normalizedStart,
+            (int) $requestModel->service_id,
+            $dentistId
+        );
+
+        if (!$isAvailable) {
+            throw new RuntimeException('Selected schedule is no longer available.');
+        }
+
+        $start = Carbon::parse($appointmentDate . ' ' . $normalizedStart);
+        $end = $start->copy()->addMinutes((int) $service->estimated_duration_minutes);
+
+        return DB::transaction(function () use (
+            $requestModel,
+            $dentistId,
+            $appointmentDate,
+            $normalizedStart,
+            $start,
+            $end,
+            $service,
+            $staffNotes
+        ) {
+            $userId = Auth::id();
+            $clinicSetting = ClinicSetting::query()->first();
+
+            $appointment = Appointment::create([
+                'appointment_code' => 'APT-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(5)),
+                'request_id' => $requestModel->request_id,
+                'dentist_id' => $dentistId,
+                'patient_id' => $requestModel->patient_id,
+                'service_id' => $requestModel->service_id,
+                'appointment_date' => $appointmentDate,
+                'start_time' => $start->format('H:i:s'),
+                'end_time' => $end->format('H:i:s'),
+                'estimated_duration_minutes' => (int) $service->estimated_duration_minutes,
+                'estimated_price' => $service->estimated_price,
+                'status' => 'confirmed',
+                'booked_by' => $userId,
+                'confirmed_by' => $userId,
+                'remarks' => $staffNotes,
+                'grace_period_minutes' => $clinicSetting?->default_no_show_minutes ?? 30,
+            ]);
+
+            $requestModel->update([
+                'preferred_dentist_id' => $dentistId,
+                'preferred_date' => $appointmentDate,
+                'preferred_start_time' => $normalizedStart,
+                'request_status' => 'converted_to_appointment',
+                'reviewed_by_user_id' => $userId,
+                'reviewed_at' => now(),
+                'review_notes' => $staffNotes,
+            ]);
+
+            AppointmentStatusLog::create([
+                'appointment_id' => $appointment->appointment_id,
+                'old_status' => null,
+                'new_status' => 'confirmed',
+                'changed_by' => $userId,
+                'remarks' => 'Converted from request #' . $requestModel->request_id,
+                'changed_at' => now(),
+            ]);
+
+            $this->reminderGenerationService->generateForAppointment($appointment);
+
+            return $appointment;
+        });
+    }
+
+    public function reschedule(
+        AppointmentRequest $requestModel,
+        int $dentistId,
+        string $appointmentDate,
+        string $startTime,
+        ?string $staffNotes = null
+    ): void {
+        if (!in_array($requestModel->request_status, ['pending', 'under_review', 'rescheduled'], true)) {
+            throw new RuntimeException('Request cannot be rescheduled.');
+        }
+
+        $normalizedStart = $this->normalizeTime($startTime);
+
+        $isAvailable = $this->availabilityService->isRequestedSlotAvailable(
+            $appointmentDate,
+            $normalizedStart,
+            (int) $requestModel->service_id,
+            $dentistId
+        );
+
+        if (!$isAvailable) {
+            throw new RuntimeException('New selected schedule is not available.');
+        }
+
+        $previous = [
+            'preferred_dentist_id' => $requestModel->preferred_dentist_id,
+            'preferred_date' => $requestModel->preferred_date,
+            'preferred_start_time' => $requestModel->preferred_start_time,
+        ];
+
+        $requestModel->update([
+            'preferred_dentist_id' => $dentistId,
+            'preferred_date' => $appointmentDate,
+            'preferred_start_time' => $normalizedStart,
+            'request_status' => 'rescheduled',
+            'reviewed_by_user_id' => Auth::id(),
+            'reviewed_at' => now(),
+            'review_notes' => json_encode([
+                'remarks' => $staffNotes,
+                'previous_schedule' => $previous,
+                'new_schedule' => [
+                    'dentist_id' => $dentistId,
+                    'appointment_date' => $appointmentDate,
+                    'start_time' => $normalizedStart,
+                ],
+            ], JSON_UNESCAPED_UNICODE),
         ]);
-
-        Session::put($this->latestTokenKey(), $token);
-
-        return $token;
     }
 
-    public function update(string $token, array $validated): void
-    {
-        if (!$this->exists($token)) {
-            throw new RuntimeException('Booking review session not found.');
+    public function reject(
+        AppointmentRequest $requestModel,
+        ?string $staffNotes = null
+    ): void {
+        if (!in_array($requestModel->request_status, ['pending', 'under_review', 'rescheduled'], true)) {
+            throw new RuntimeException('Request cannot be rejected.');
         }
 
-        Session::put($this->buildTokenKey($token), [
-            'data' => $validated,
-            'created_at' => now()->toDateTimeString(),
-            'expires_at' => now()->addMinutes(30)->toDateTimeString(),
+        $requestModel->update([
+            'request_status' => 'rejected',
+            'reviewed_by_user_id' => Auth::id(),
+            'reviewed_at' => now(),
+            'review_notes' => $staffNotes,
         ]);
-
-        Session::put($this->latestTokenKey(), $token);
     }
 
-    public function get(string $token): ?array
+    protected function normalizeTime(string $time): string
     {
-        $payload = Session::get($this->buildTokenKey($token));
-
-        if (!$payload || !is_array($payload)) {
-            return null;
+        try {
+            return Carbon::createFromFormat('H:i', $time)->format('H:i:s');
+        } catch (\Throwable) {
+            return Carbon::createFromFormat('H:i:s', $time)->format('H:i:s');
         }
-
-        if ($this->isExpiredPayload($payload)) {
-            $this->forget($token);
-            return null;
-        }
-
-        return $payload['data'] ?? null;
-    }
-
-    public function getOrFail(string $token): array
-    {
-        $data = $this->get($token);
-
-        if (!$data) {
-            throw new RuntimeException('Booking review session expired or not found.');
-        }
-
-        return $data;
-    }
-
-    public function exists(string $token): bool
-    {
-        return $this->get($token) !== null;
-    }
-
-    public function forget(string $token): void
-    {
-        Session::forget($this->buildTokenKey($token));
-
-        if (Session::get($this->latestTokenKey()) === $token) {
-            Session::forget($this->latestTokenKey());
-        }
-    }
-
-    public function forgetLatest(): void
-    {
-        $token = $this->latestToken();
-
-        if ($token) {
-            $this->forget($token);
-        }
-    }
-
-    public function latestToken(): ?string
-    {
-        return Session::get($this->latestTokenKey());
-    }
-
-    public function latestData(): ?array
-    {
-        $token = $this->latestToken();
-
-        if (!$token) {
-            return null;
-        }
-
-        return $this->get($token);
-    }
-
-    protected function buildTokenKey(string $token): string
-    {
-        return "{$this->sessionKey}.{$token}";
-    }
-
-    protected function latestTokenKey(): string
-    {
-        return "{$this->sessionKey}_latest_token";
-    }
-
-    protected function isExpiredPayload(array $payload): bool
-    {
-        if (empty($payload['expires_at'])) {
-            return false;
-        }
-
-        return Carbon::parse($payload['expires_at'])->isPast();
     }
 }

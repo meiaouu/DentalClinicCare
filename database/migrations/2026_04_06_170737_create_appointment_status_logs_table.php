@@ -4,12 +4,11 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('appointment_status_logs', function (Blueprint $table) {
-            $table->id('log_id');
+            $table->bigIncrements('status_log_id');
             $table->unsignedBigInteger('appointment_id');
             $table->string('old_status', 50)->nullable();
             $table->string('new_status', 50);
@@ -20,7 +19,7 @@ return new class extends Migration
             $table->foreign('appointment_id')
                 ->references('appointment_id')
                 ->on('appointments')
-                ->onDelete('cascade');
+                ->cascadeOnDelete();
 
             $table->foreign('changed_by')
                 ->references('user_id')
