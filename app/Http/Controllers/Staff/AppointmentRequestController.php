@@ -10,8 +10,8 @@ use App\Models\AppointmentRequest;
 use App\Models\Dentist;
 use App\Services\Appointment\AppointmentRequestReviewService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Http\Request;
 
 class AppointmentRequestController extends Controller
 {
@@ -20,54 +20,38 @@ class AppointmentRequestController extends Controller
     ) {
     }
 
-    public function index(Request $request): View
-    {
-        $status = $request->input('status');
-        $date = $request->input('date');
-        $patient = $request->input('patient');
-        $dentistId = $request->input('dentist_id');
+    public function index(Request $request)
+{
+    $query = AppointmentRequest::with(['patient', 'service']);
 
-        $requests = AppointmentRequest::query()
-            ->with([
-                'service',
-                'preferredDentist.user',
-                'patient',
-            ])
-            ->when($status, fn ($query) => $query->where('request_status', $status))
-            ->when($date, fn ($query) => $query->whereDate('preferred_date', $date))
-            ->when($dentistId, fn ($query) => $query->where('preferred_dentist_id', $dentistId))
-            ->when($patient, function ($query) use ($patient) {
-                $query->where(function ($subQuery) use ($patient) {
-                    $subQuery->whereHas('patient', function ($patientQuery) use ($patient) {
-                        $patientQuery->where('first_name', 'like', "%{$patient}%")
-                            ->orWhere('last_name', 'like', "%{$patient}%");
-                    })->orWhere('guest_first_name', 'like', "%{$patient}%")
-                      ->orWhere('guest_last_name', 'like', "%{$patient}%");
-                });
-            })
-            ->latest('created_at')
-            ->paginate(15)
-            ->withQueryString();
-
-        $dentists = Dentist::with('user')
-            ->where('is_active', true)
-            ->get();
-
-        return view('staff.appointment-requests.index', [
-            'requests' => $requests,
-            'dentists' => $dentists,
-            'filters' => compact('status', 'date', 'patient', 'dentistId'),
-        ]);
+    // Filter: Service
+    if ($request->filled('service_id')) {
+        $query->where('service_id', $request->service_id);
     }
+
+    // Sort
+    if ($request->input('sort') === 'oldest') {
+        $query->oldest();
+    } else {
+        $query->latest();
+    }
+
+    $requests = $query->paginate(10)->withQueryString();
+
+    $services = \App\Models\Service::orderBy('service_name')->get();
+
+    return view('staff.appointment-requests.index', compact('requests', 'services'));
+}
 
     public function show(AppointmentRequest $appointmentRequest): View
     {
         $appointmentRequest->load([
             'service',
             'answers.option.values',
+            'answers.selectedValue',
             'preferredDentist.user',
             'patient',
-            'convertedAppointment.statusLogs',
+            'convertedAppointment',
         ]);
 
         $dentists = Dentist::with('user')
@@ -131,8 +115,8 @@ class AppointmentRequestController extends Controller
             $this->reviewService->reschedule(
                 requestModel: $appointmentRequest,
                 dentistId: (int) $request->input('dentist_id'),
-                appointmentDate: $request->input('appointment_date'),
-                startTime: $request->input('start_time'),
+                appointmentDate: $request->input('preferred_date'),
+                startTime: $request->input('preferred_start_time'),
                 staffNotes: $request->input('remarks')
             );
 

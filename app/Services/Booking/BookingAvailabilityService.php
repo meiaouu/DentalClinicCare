@@ -48,46 +48,52 @@ class BookingAvailabilityService
     }
 
     public function getAvailableSlots(string $date, int $serviceId, ?int $dentistId = null): array
-    {
-        $service = Service::query()->find($serviceId);
-        $clinic = ClinicSetting::query()->first();
-        $daySchedule = $this->getClinicDaySchedule($date);
+{
+    $service = Service::query()->find($serviceId);
+    $clinic = ClinicSetting::query()->first();
+    $daySchedule = $this->getClinicDaySchedule($date);
 
-        if (!$service || !$clinic || !$daySchedule || !$daySchedule['is_open']) {
-            return [];
-        }
-
-        $duration = (int) $service->estimated_duration_minutes;
-        $interval = max(5, (int) $clinic->slot_interval_minutes);
-
-        if ($duration <= 0) {
-            return [];
-        }
-
-        $open = Carbon::parse($date . ' ' . $daySchedule['open_time']);
-        $close = Carbon::parse($date . ' ' . $daySchedule['close_time']);
-
-        $slots = [];
-        $cursor = $open->copy();
-
-        while ($cursor->copy()->addMinutes($duration) <= $close) {
-            $startTime = $cursor->format('H:i:s');
-
-            if ($this->isRequestedSlotAvailable($date, $startTime, $serviceId, $dentistId)) {
-                $endTime = $cursor->copy()->addMinutes($duration);
-
-                $slots[] = [
-                    'start_time' => $cursor->format('H:i:s'),
-                    'end_time' => $endTime->format('H:i:s'),
-                    'label' => $cursor->format('H:i') . ' - ' . $endTime->format('H:i'),
-                ];
-            }
-
-            $cursor->addMinutes($interval);
-        }
-
-        return $slots;
+    if (!$service || !$clinic || !$daySchedule || !$daySchedule['is_open']) {
+        return [];
     }
+
+    $duration = (int) $service->estimated_duration_minutes;
+    $interval = max(5, (int) $clinic->slot_interval_minutes);
+
+    if ($duration <= 0) {
+        return [];
+    }
+
+    $open = Carbon::parse($date . ' ' . $daySchedule['open_time']);
+    $close = Carbon::parse($date . ' ' . $daySchedule['close_time']);
+    $now = now();
+
+    $slots = [];
+    $cursor = $open->copy();
+
+    while ($cursor->copy()->addMinutes($duration) <= $close) {
+        $startTime = $cursor->format('H:i:s');
+
+        if ($cursor->isToday() && $cursor->lte($now)) {
+            $cursor->addMinutes($interval);
+            continue;
+        }
+
+        if ($this->isRequestedSlotAvailable($date, $startTime, $serviceId, $dentistId)) {
+            $endTime = $cursor->copy()->addMinutes($duration);
+
+            $slots[] = [
+                'start_time' => $cursor->format('H:i:s'),
+                'end_time' => $endTime->format('H:i:s'),
+                'label' => $cursor->format('H:i') . ' - ' . $endTime->format('H:i'),
+            ];
+        }
+
+        $cursor->addMinutes($interval);
+    }
+
+    return $slots;
+}
 
     public function getClinicHoursForDate(string $date): array
     {
@@ -147,40 +153,46 @@ class BookingAvailabilityService
         }
 
         if ($dentistId !== null) {
-            return $this->isDentistAvailableForSlot($dentistId, $date, $slotStart, $slotEnd);
-        }
+    return $this->isDentistAvailableForSlot($dentistId, $date, $slotStart, $slotEnd);
+}
 
-        return Dentist::query()
-            ->where('is_active', 1)
-            ->get()
-            ->contains(function (Dentist $dentist) use ($date, $slotStart, $slotEnd) {
-                return $this->isDentistAvailableForSlot(
-                    (int) $dentist->dentist_id,
-                    $date,
-                    $slotStart,
-                    $slotEnd
-                );
-            });
+return true;
     }
 
     public function getClinicDaySchedule(string $date): ?array
-    {
-        $dayOfWeek = Carbon::parse($date)->dayOfWeek;
+{
+    $dayOfWeek = Carbon::parse($date)->dayOfWeek;
 
+    if (class_exists(\App\Models\ClinicScheduleRule::class)) {
         $rule = ClinicScheduleRule::query()
             ->where('day_of_week', $dayOfWeek)
             ->first();
 
-        if (!$rule || !(bool) $rule->is_open) {
-            return null;
-        }
+        if ($rule) {
+            if (!(bool) $rule->is_open) {
+                return null;
+            }
 
+            return [
+                'is_open' => true,
+                'open_time' => $rule->open_time,
+                'close_time' => $rule->close_time,
+            ];
+        }
+    }
+
+    $clinic = ClinicSetting::query()->first();
+
+    if ($clinic && !empty($clinic->open_time) && !empty($clinic->close_time)) {
         return [
             'is_open' => true,
-            'open_time' => $rule->open_time,
-            'close_time' => $rule->close_time,
+            'open_time' => $clinic->open_time,
+            'close_time' => $clinic->close_time,
         ];
     }
+
+    return null;
+}
 
     protected function hasAnyPossibleSlot(string $date, int $dentistId, int $duration): bool
     {
@@ -334,7 +346,12 @@ class BookingAvailabilityService
 
     public function getCalendarAvailabilityForMonth(string $month, int $serviceId, ?int $dentistId = null): array
 {
-    $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+    try {
+        $startOfMonth = Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+    } catch (\Throwable $e) {
+        return [];
+    }
+
     $endOfMonth = $startOfMonth->copy()->endOfMonth();
     $today = now()->startOfDay();
 
@@ -365,19 +382,9 @@ class BookingAvailabilityService
 protected function buildCalendarDayStatus(string $date, int $serviceId, ?int $dentistId = null): array
 {
     $service = Service::query()->find($serviceId);
-
-    if (!$service || (int) $service->estimated_duration_minutes <= 0) {
-        return [
-            'status' => 'unavailable',
-            'clickable' => false,
-            'label' => 'Unavailable',
-        ];
-    }
-
-    $daySchedule = $this->getClinicDaySchedule($date);
     $clinic = ClinicSetting::query()->first();
 
-    if (!$daySchedule || !$clinic || !$daySchedule['is_open']) {
+    if (!$service || !$clinic) {
         return [
             'status' => 'unavailable',
             'clickable' => false,
@@ -386,30 +393,137 @@ protected function buildCalendarDayStatus(string $date, int $serviceId, ?int $de
     }
 
     $duration = (int) $service->estimated_duration_minutes;
-    $interval = max(5, (int) $clinic->slot_interval_minutes);
 
-    $open = Carbon::parse($date . ' ' . $daySchedule['open_time']);
-    $close = Carbon::parse($date . ' ' . $daySchedule['close_time']);
-    $cursor = $open->copy();
+    if ($duration <= 0) {
+        return [
+            'status' => 'unavailable',
+            'clickable' => false,
+            'label' => 'Unavailable',
+        ];
+    }
 
-    while ($cursor->copy()->addMinutes($duration) <= $close) {
-        if ($this->isRequestedSlotAvailable($date, $cursor->format('H:i:s'), $serviceId, $dentistId)) {
-            return [
-                'status' => 'available',
-                'clickable' => true,
-                'label' => 'Available',
-            ];
-        }
+    $daySchedule = $this->getClinicDaySchedule($date);
 
-        $cursor->addMinutes($interval);
+    if (!$daySchedule || !(bool) ($daySchedule['is_open'] ?? false)) {
+        return [
+            'status' => 'unavailable',
+            'clickable' => false,
+            'label' => 'Unavailable',
+        ];
+    }
+
+    $clinicHours = $this->getClinicHoursForDate($date);
+
+    if (empty($clinicHours)) {
+        return [
+            'status' => 'unavailable',
+            'clickable' => false,
+            'label' => 'Unavailable',
+        ];
+    }
+
+    $availableSlots = $this->getAvailableSlots($date, $serviceId, $dentistId);
+
+    if (empty($availableSlots)) {
+        return [
+            'status' => 'unavailable',
+            'clickable' => false,
+            'label' => 'Unavailable',
+        ];
+    }
+
+    $availableCount = count($availableSlots);
+    $clinicHourCount = count($clinicHours);
+
+    if ($availableCount > 0 && $availableCount < $clinicHourCount) {
+        return [
+            'status' => 'half_day',
+            'clickable' => true,
+            'label' => 'Half Day',
+        ];
     }
 
     return [
-        'status' => 'unavailable',
-        'clickable' => false,
-        'label' => 'Unavailable',
-    ];
+        'status' => 'available',
+        'clickable' => true,
+        'label' => 'Available',
+          ];
 }
+public function getClinicCalendarAvailabilityForMonth(string $month): array
+{
+    try {
+        $startOfMonth = \Carbon\Carbon::createFromFormat('Y-m', $month)->startOfMonth();
+    } catch (\Throwable $e) {
+        return [];
+    }
 
+    $endOfMonth = $startOfMonth->copy()->endOfMonth();
+    $today = now()->startOfDay();
+
+    $results = [];
+    $cursor = $startOfMonth->copy();
+
+    while ($cursor->lte($endOfMonth)) {
+        $date = $cursor->toDateString();
+
+        // ❌ Past dates
+        if ($cursor->lt($today)) {
+            $results[$date] = [
+                'status' => 'unavailable',
+                'clickable' => false,
+                'label' => 'Unavailable',
+            ];
+            $cursor->addDay();
+            continue;
+        }
+
+        $daySchedule = $this->getClinicDaySchedule($date);
+
+        // ❌ Closed day
+        if (!$daySchedule || !(bool) ($daySchedule['is_open'] ?? false)) {
+            $results[$date] = [
+                'status' => 'unavailable',
+                'clickable' => false,
+                'label' => 'Unavailable',
+            ];
+            $cursor->addDay();
+            continue;
+        }
+
+        // ❌ Full-day clinic block
+        $hasFullDayBlock = \App\Models\ScheduleBlock::query()
+            ->where('scope', 'clinic')
+            ->whereDate('block_date', $date)
+            ->where(function ($query) {
+                $query->where('is_full_day', true)
+                      ->orWhere(function ($q) {
+                          $q->whereNull('start_time')
+                            ->whereNull('end_time');
+                      });
+            })
+            ->exists();
+
+        if ($hasFullDayBlock) {
+            $results[$date] = [
+                'status' => 'unavailable',
+                'clickable' => false,
+                'label' => 'Unavailable',
+            ];
+            $cursor->addDay();
+            continue;
+        }
+
+        // ✅ Available
+        $results[$date] = [
+            'status' => 'available',
+            'clickable' => true,
+            'label' => 'Available',
+        ];
+
+        $cursor->addDay();
+    }
+
+    return $results;
+}
 
 }

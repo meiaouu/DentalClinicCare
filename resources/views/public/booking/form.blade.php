@@ -4,33 +4,59 @@
 <style>
     .booking-page {
         min-height: 100vh;
-        background: #f8fafc;
-        padding: 40px 16px 72px;
+        background:
+            radial-gradient(circle at top right, rgba(15, 157, 138, 0.08), transparent 26%),
+            linear-gradient(180deg, #f8fafc 0%, #f3f4f6 100%);
+        padding: 42px 16px 72px;
     }
 
     .booking-container {
-        max-width: 1040px;
+        max-width: 1120px;
         margin: 0 auto;
     }
 
     .booking-header {
         text-align: center;
-        margin-bottom: 28px;
+        margin-bottom: 30px;
+    }
+
+    .booking-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        background: #ecfdf5;
+        color: #0f766e;
+        font-size: 13px;
+        font-weight: 800;
+        border: 1px solid #d1fae5;
+        margin-bottom: 14px;
+    }
+
+    .booking-badge-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: #10b981;
+        display: inline-block;
     }
 
     .booking-title {
-        margin: 0 0 8px;
-        font-size: clamp(28px, 4vw, 40px);
-        font-weight: 800;
-        color: #0f172a;
+        margin: 0 0 10px;
+        font-size: clamp(30px, 4vw, 42px);
+        font-weight: 900;
+        color: #0b0f13;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
     }
 
     .booking-subtitle {
         margin: 0 auto;
-        max-width: 720px;
-        color: #64748b;
+        max-width: 760px;
+        color: #6b7280;
         font-size: 15px;
-        line-height: 1.7;
+        line-height: 1.8;
     }
 
     .booking-stepper {
@@ -38,7 +64,7 @@
         justify-content: center;
         align-items: center;
         gap: 12px;
-        margin-top: 24px;
+        margin-top: 26px;
         flex-wrap: wrap;
     }
 
@@ -49,27 +75,29 @@
     }
 
     .booking-step-circle {
-        width: 40px;
-        height: 40px;
+        width: 42px;
+        height: 42px;
         border-radius: 999px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
         font-size: 14px;
         font-weight: 800;
-        border: 2px solid #dbe4ea;
-        background: #fff;
-        color: #64748b;
+        border: 2px solid #d1d5db;
+        background: #ffffff;
+        color: #6b7280;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
 
     .booking-step-circle.active {
         background: #0f9d8a;
         border-color: #0f9d8a;
-        color: #fff;
+        color: #ffffff;
+        box-shadow: 0 8px 18px rgba(15, 157, 138, 0.20);
     }
 
     .booking-step-line {
-        width: 64px;
+        width: 68px;
         height: 2px;
         background: #dbe4ea;
         border-radius: 999px;
@@ -78,75 +106,111 @@
     .booking-step-label {
         font-size: 14px;
         font-weight: 700;
-        color: #475569;
+        color: #4b5563;
     }
 
     .booking-card {
-        background: #fff;
-        border: 1px solid #e2e8f0;
-        border-radius: 24px;
-        padding: 24px;
-        box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 28px;
+        padding: 28px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.07);
     }
 
     .booking-section {
-        border: 1px solid #e9eef3;
-        border-radius: 18px;
-        padding: 20px;
-        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 22px;
+        padding: 22px;
+        background: #ffffff;
     }
 
     .booking-section + .booking-section {
-        margin-top: 20px;
+        margin-top: 22px;
     }
 
     .booking-section-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 16px;
-        padding-bottom: 12px;
-        border-bottom: 1px solid #eef2f6;
+        gap: 12px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .booking-section-title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .booking-section-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #ecfdf5;
+        color: #0f9d8a;
+        font-weight: 900;
+        font-size: 16px;
+        border: 1px solid #d1fae5;
+        flex-shrink: 0;
     }
 
     .booking-section-title {
         margin: 0;
-        font-size: 18px;
-        font-weight: 800;
-        color: #0f172a;
+        font-size: 19px;
+        font-weight: 900;
+        color: #111827;
+        line-height: 1.2;
+    }
+
+    .booking-section-subtitle {
+        margin: 4px 0 0;
+        font-size: 13px;
+        color: #6b7280;
+        line-height: 1.5;
     }
 
     .booking-section-note {
         font-size: 12px;
-        font-weight: 700;
+        font-weight: 800;
         color: #0f766e;
         background: #ecfdf5;
         border-radius: 999px;
-        padding: 6px 10px;
+        padding: 7px 12px;
         white-space: nowrap;
+        border: 1px solid #d1fae5;
     }
 
     .form-label {
         font-size: 13px;
-        font-weight: 700;
-        color: #334155;
+        font-weight: 800;
+        color: #1f2937;
         margin-bottom: 8px;
     }
 
     .form-control,
     .form-select {
-        height: 50px;
-        border-radius: 12px;
-        border: 1px solid #d7e0e8;
+        height: 52px;
+        border-radius: 14px;
+        border: 1px solid #d1d5db;
         font-size: 15px;
+        color: #111827;
         box-shadow: none !important;
+        background: #ffffff;
+    }
+
+    .form-control::placeholder {
+        color: #9ca3af;
     }
 
     textarea.form-control {
         min-height: 120px;
         height: auto;
-        padding-top: 12px;
+        padding-top: 14px;
         resize: vertical;
     }
 
@@ -156,83 +220,47 @@
         box-shadow: 0 0 0 4px rgba(15, 157, 138, 0.10) !important;
     }
 
-    .booking-panel {
-        border: 1px solid #e6edf2;
-        border-radius: 16px;
-        padding: 16px;
-        background: #f8fafc;
-        height: 30%;
-    }
-    .booking-calendaer-panel {
-        border: 1px solid #e6edf2;
-        border-radius: 16px;
-        padding: 16px;
-        background: #f8fafc;
-        height: 50%;
-    }
-    .booking-slot-panel {
-        border: 1px solid #e6edf2;
-        border-radius: 16px;
-        padding: 16px;
-        background: #f8fafc;
-        height: 50%;
+    .booking-panel,
+    .booking-calendar-panel,
+    .booking-slot-panel,
+    .booking-info-panel {
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        padding: 18px;
+        background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
     }
 
     .booking-panel-title {
         margin: 0 0 8px;
         font-size: 15px;
-        font-weight: 800;
-        color: #0f172a;
+        font-weight: 900;
+        color: #111827;
     }
 
     .booking-panel-text {
         font-size: 14px;
         line-height: 1.7;
-        color: #475569;
+        color: #4b5563;
     }
 
-    .doctor-grid {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+    .booking-info-panel {
+        display: flex;
+        gap: 14px;
+        align-items: flex-start;
     }
 
-    .doctor-card {
-        border: 1px solid #dbe4ea;
-        background: #fff;
-        border-radius: 16px;
-        padding: 14px;
-        cursor: pointer;
-        transition: 0.2s ease;
-        text-align: left;
-    }
-
-    .doctor-card:hover {
-        border-color: #0f9d8a;
-        background: #f0fdfa;
-    }
-
-    .doctor-card.active {
-        border-color: #0f9d8a;
+    .booking-info-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 14px;
         background: #ecfdf5;
-        box-shadow: inset 0 0 0 1px #0f9d8a;
-    }
-
-    .doctor-card-title {
-        font-size: 15px;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 4px;
-    }
-
-    .doctor-card-subtitle {
-        font-size: 13px;
-        color: #64748b;
-        line-height: 1.5;
-    }
-
-    .doctor-any-card {
-        margin-bottom: 12px;
+        color: #0f9d8a;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        flex-shrink: 0;
+        border: 1px solid #d1fae5;
     }
 
     .calendar-toolbar {
@@ -246,18 +274,24 @@
     .calendar-month-label {
         margin: 0;
         font-size: 16px;
-        font-weight: 800;
-        color: #0f172a;
+        font-weight: 900;
+        color: #111827;
     }
 
     .calendar-btn {
-        width: 38px;
-        height: 38px;
-        border-radius: 10px;
-        border: 1px solid #d7e0e8;
-        background: #fff;
-        color: #334155;
-        font-weight: 800;
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #374151;
+        font-weight: 900;
+        transition: 0.2s ease;
+    }
+
+    .calendar-btn:hover {
+        border-color: #0f9d8a;
+        color: #0f9d8a;
     }
 
     .calendar-weekdays {
@@ -267,8 +301,8 @@
         margin-bottom: 10px;
         text-align: center;
         font-size: 12px;
-        font-weight: 800;
-        color: #64748b;
+        font-weight: 900;
+        color: #6b7280;
     }
 
     #bookingCalendarGrid {
@@ -278,9 +312,24 @@
     }
 
     #bookingCalendarGrid button {
-        min-height: 44px;
-        border-radius: 10px;
-        font-weight: 700;
+        min-height: 46px;
+        border-radius: 12px;
+        font-weight: 800;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #374151;
+        transition: 0.2s ease;
+    }
+
+    #bookingCalendarGrid button:hover:not(:disabled) {
+        border-color: #0f9d8a;
+        color: #0f9d8a;
+    }
+
+    #bookingCalendarGrid .btn-primary {
+        background: #0f9d8a !important;
+        border-color: #0f9d8a !important;
+        color: #ffffff !important;
     }
 
     .slot-grid {
@@ -291,51 +340,56 @@
 
     .time-slot-btn {
         border: 1px solid #dbe4ea;
-        background: #fff;
-        border-radius: 12px;
-        min-height: 46px;
+        background: #ffffff;
+        border-radius: 14px;
+        min-height: 48px;
         padding: 10px;
-        font-weight: 700;
+        font-weight: 800;
         text-align: center;
-        color: #334155;
+        color: #374151;
         cursor: pointer;
         transition: 0.2s ease;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
     }
 
     .time-slot-btn:hover:not(.disabled) {
         border-color: #0f9d8a;
         color: #0f9d8a;
+        background: #f0fdfa;
     }
 
     .time-slot-btn.active {
         background: #0f9d8a;
         border-color: #0f9d8a;
-        color: #fff;
+        color: #ffffff;
+        box-shadow: 0 10px 18px rgba(15,157,138,0.18);
     }
 
     .time-slot-btn.disabled {
-        background: #f8fafc;
-        color: #94a3b8;
-        border-color: #e2e8f0;
+        background: #f9fafb;
+        color: #9ca3af;
+        border-color: #e5e7eb;
         cursor: not-allowed;
+        box-shadow: none;
     }
 
     .booking-actions {
         display: flex;
         justify-content: flex-end;
-        margin-top: 24px;
+        margin-top: 28px;
     }
 
     .booking-primary-btn {
-        min-width: 220px;
-        height: 52px;
+        min-width: 230px;
+        height: 54px;
         border: none;
-        border-radius: 14px;
+        border-radius: 16px;
         background: #0f9d8a;
-        color: #fff;
+        color: #ffffff;
         font-size: 15px;
-        font-weight: 800;
+        font-weight: 900;
         transition: 0.2s ease;
+        box-shadow: 0 12px 24px rgba(15,157,138,0.20);
     }
 
     .booking-primary-btn:hover {
@@ -343,15 +397,21 @@
     }
 
     .alert {
-        border-radius: 16px;
+        border-radius: 18px;
+        border: 1px solid #fecaca;
+        background: #fff5f5;
     }
 
     .form-check {
-        padding: 10px 12px 10px 34px;
+        padding: 12px 12px 12px 36px;
         border: 1px solid #e5edf2;
-        border-radius: 12px;
-        background: #fff;
+        border-radius: 14px;
+        background: #ffffff;
         margin-bottom: 8px;
+    }
+
+    .small.text-muted {
+        color: #6b7280 !important;
     }
 
     @media (max-width: 991.98px) {
@@ -362,22 +422,23 @@
 
     @media (max-width: 767.98px) {
         .booking-page {
-            padding: 28px 12px 56px;
+            padding: 26px 12px 56px;
         }
 
         .booking-card {
             padding: 18px;
+            border-radius: 22px;
         }
 
         .booking-section {
             padding: 16px;
+            border-radius: 18px;
         }
 
         .booking-step-line {
-            width: 40px;
+            width: 34px;
         }
 
-        .doctor-grid,
         .slot-grid {
             grid-template-columns: 1fr;
         }
@@ -388,59 +449,28 @@
 
         .booking-primary-btn {
             width: 100%;
+            min-width: 100%;
+        }
+
+        .booking-section-head {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
-
-    .calendar-date-btn {
-    min-height: 64px;
-    border-radius: 12px;
-    border: 1px solid #dbe4ea;
-    background: #fff;
-    color: #334155;
-    font-weight: 700;
-    position: relative;
-    padding: 8px;
-}
-
-.calendar-date-btn.available {
-    background: #ffffff;
-}
-
-.calendar-date-btn.selected {
-    background: #0f9d8a;
-    border-color: #0f9d8a;
-    color: #ffffff;
-}
-
-.calendar-date-btn.unavailable {
-    background: #f8fafc;
-    color: #94a3b8;
-    border-color: #e2e8f0;
-    opacity: 0.75;
-    cursor: not-allowed;
-}
-
-.calendar-date-tag {
-    display: inline-flex;
-    margin-top: 6px;
-    padding: 3px 8px;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 800;
-}
-
-.calendar-date-tag.unavailable {
-    background: #fee2e2;
-    color: #b91c1c;
-}
 </style>
 
 <div class="booking-page">
     <div class="booking-container">
         <div class="booking-header">
+            <div class="booking-badge">
+                <span class="booking-badge-dot"></span>
+                {{ $isGuest ? 'Guest Appointment Request' : 'Patient Appointment Request' }}
+            </div>
+
             <h1 class="booking-title">{{ $isGuest ? 'Guest Booking Form' : 'Book Appointment' }}</h1>
+
             <p class="booking-subtitle">
-                Fill in your information, choose a dental service, select an available doctor, and pick your preferred date and time.
+                Fill in your information, choose a dental service, and pick your preferred date and time.
             </p>
 
             <div class="booking-stepper">
@@ -463,7 +493,7 @@
 
         <div class="booking-card">
             @if($errors->any())
-                <div class="alert alert-danger mb-4">
+                <div class="alert alert-danger mb-4 p-3">
                     <strong>Please fix the following:</strong>
                     <ul class="mb-0 mt-2">
                         @foreach($errors->all() as $error)
@@ -478,7 +508,13 @@
 
                 <div class="booking-section">
                     <div class="booking-section-head">
-                        <h5 class="booking-section-title">Patient Information</h5>
+                        <div class="booking-section-title-wrap">
+                            <div class="booking-section-icon">1</div>
+                            <div>
+                                <h5 class="booking-section-title">Patient Information</h5>
+                                <p class="booking-section-subtitle">Basic personal and contact details for your appointment request.</p>
+                            </div>
+                        </div>
                         <span class="booking-section-note">{{ $isGuest ? 'Guest Details' : 'Patient Details' }}</span>
                     </div>
 
@@ -563,7 +599,13 @@
 
                 <div class="booking-section">
                     <div class="booking-section-head">
-                        <h5 class="booking-section-title">Address</h5>
+                        <div class="booking-section-title-wrap">
+                            <div class="booking-section-icon">2</div>
+                            <div>
+                                <h5 class="booking-section-title">Address</h5>
+                                <p class="booking-section-subtitle">Your current address information for clinic records.</p>
+                            </div>
+                        </div>
                         <span class="booking-section-note">Residential Information</span>
                     </div>
 
@@ -607,7 +649,13 @@
 
                 <div class="booking-section">
                     <div class="booking-section-head">
-                        <h5 class="booking-section-title">Appointment Details</h5>
+                        <div class="booking-section-title-wrap">
+                            <div class="booking-section-icon">3</div>
+                            <div>
+                                <h5 class="booking-section-title">Appointment Details</h5>
+                                <p class="booking-section-subtitle">Choose a service, date, time, and additional request details.</p>
+                            </div>
+                        </div>
                         <span class="booking-section-note">Service and Schedule</span>
                     </div>
 
@@ -641,33 +689,17 @@
                             </div>
                         </div>
 
+                        <input type="hidden" name="preferred_dentist_id" id="preferred_dentist_id" value="">
+
                         <div class="col-12 mb-3">
-                            <label class="form-label">Available Doctor</label>
-                            <input type="hidden" name="preferred_dentist_id" id="preferred_dentist_id"
-                                   value="{{ old('preferred_dentist_id') }}">
-
-                            <div class="doctor-any-card">
-                                <button type="button"
-                                        class="doctor-card w-100 {{ old('preferred_dentist_id') ? '' : 'active' }}"
-                                        data-dentist-value="">
-                                    <div class="doctor-card-title">Any Available Dentist</div>
-                                    <div class="doctor-card-subtitle">Let the clinic assign an available doctor for your selected service and time.</div>
-                                </button>
-                            </div>
-
-                            <div class="doctor-grid" id="doctorCardGrid">
-                                @forelse(($dentists ?? []) as $dentist)
-                                    <button type="button"
-                                            class="doctor-card {{ (string) old('preferred_dentist_id') === (string) $dentist->dentist_id ? 'active' : '' }}"
-                                            data-dentist-value="{{ $dentist->dentist_id }}">
-                                        <div class="doctor-card-title">Dentist #{{ $dentist->dentist_id }}</div>
-                                        <div class="doctor-card-subtitle">Select this doctor for your preferred appointment request.</div>
-                                    </button>
-                                @empty
-                                    <div class="booking-panel">
-                                        <div class="booking-panel-text">No available dentists found.</div>
+                            <div class="booking-info-panel">
+                                <div class="booking-info-icon">i</div>
+                                <div>
+                                    <h6 class="booking-panel-title mb-1">Doctor Assignment</h6>
+                                    <div class="booking-panel-text">
+                                        Dentist selection is handled by the clinic during review and confirmation to match the best available schedule.
                                     </div>
-                                @endforelse
+                                </div>
                             </div>
                         </div>
 
@@ -683,7 +715,7 @@
                                    value="{{ old('preferred_date') }}"
                                    min="{{ now()->toDateString() }}">
 
-                            <div class="booking-calendaer-panel">
+                            <div class="booking-calendar-panel">
                                 <div class="calendar-toolbar">
                                     <button type="button" class="calendar-btn" id="prevMonthBtn">&lt;</button>
                                     <h6 id="calendarMonthLabel" class="calendar-month-label">Select Date</h6>
@@ -741,8 +773,6 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const serviceSelect = document.getElementById('service_id');
-    const dentistInput = document.getElementById('preferred_dentist_id');
-    const dentistCards = document.querySelectorAll('[data-dentist-value]');
     const dateInput = document.getElementById('preferred_date');
     const dynamicQuestions = document.getElementById('dynamicQuestions');
 
@@ -796,7 +826,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
     let currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
     let selectedDate = dateInput.value ? new Date(dateInput.value + 'T00:00:00') : null;
-    let monthAvailabilityMap = {};
 
     function formatDateLocal(date) {
         const year = date.getFullYear();
@@ -886,17 +915,8 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    function formatHourLabel(time24) {
-        const [hour, minute] = time24.split(':');
-        const h = parseInt(hour, 10);
-        const suffix = h >= 12 ? 'PM' : 'AM';
-        const displayHour = ((h + 11) % 12 + 1).toString().padStart(2, '0');
-        return `${suffix} ${displayHour}:${minute}`;
-    }
-
     async function loadAvailableSlots() {
         const serviceId = serviceSelect.value;
-        const dentistId = dentistInput.value;
         const date = dateInput.value;
 
         hiddenTimeInput.value = '';
@@ -907,10 +927,7 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        let url = `{{ route('booking.available.slots') }}?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
-        if (dentistId) {
-            url += `&dentist_id=${encodeURIComponent(dentistId)}`;
-        }
+        const url = `{{ route('booking.available.slots') }}?service_id=${encodeURIComponent(serviceId)}&date=${encodeURIComponent(date)}`;
 
         try {
             slotFeedback.textContent = 'Loading available time slots...';
@@ -973,6 +990,14 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
+    function formatHourLabel(time24) {
+        const [hour, minute] = time24.split(':');
+        const h = parseInt(hour, 10);
+        const suffix = h >= 12 ? 'PM' : 'AM';
+        const displayHour = ((h + 11) % 12 + 1).toString().padStart(2, '0');
+        return `${suffix} ${displayHour}:${minute}`;
+    }
+
     function renderCalendar() {
         calendarGrid.innerHTML = '';
 
@@ -998,81 +1023,37 @@ document.addEventListener('DOMContentLoaded', function () {
             const cellDate = new Date(year, month, day);
             cellDate.setHours(0, 0, 0, 0);
 
-            const formatted = formatDateLocal(cellDate);
-            const dayStatus = monthAvailabilityMap[formatted] || null;
-
             const btn = document.createElement('button');
             btn.type = 'button';
-            btn.className = 'calendar-date-btn';
-            btn.innerHTML = `<div>${day}</div>`;
+            btn.className = 'btn btn-sm';
+            btn.textContent = day;
 
             const isPast = cellDate < today;
             const isSelected = selectedDate && formatDateLocal(cellDate) === formatDateLocal(selectedDate);
-            const isUnavailable = isPast || (dayStatus && dayStatus.clickable === false);
 
-            if (isUnavailable) {
-                btn.classList.add('unavailable');
+            if (isPast) {
+                btn.classList.add('btn-light');
                 btn.disabled = true;
-
-                const tag = document.createElement('div');
-                tag.className = 'calendar-date-tag unavailable';
-                tag.textContent = 'Unavailable';
-                btn.appendChild(tag);
+                btn.style.opacity = '0.5';
+            } else if (isSelected) {
+                btn.classList.add('btn-primary');
             } else {
-                btn.classList.add('available');
+                btn.classList.add('btn-outline-secondary');
             }
 
-            if (isSelected && !isUnavailable) {
-                btn.classList.add('selected');
-            }
+            btn.addEventListener('click', function () {
+                selectedDate = cellDate;
+                const formatted = formatDateLocal(cellDate);
 
-            if (!isUnavailable) {
-                btn.addEventListener('click', function () {
-                    selectedDate = cellDate;
-                    dateInput.value = formatted;
-                    selectedDateLabel.textContent = formatted;
-                    hiddenTimeInput.value = '';
-                    renderCalendar();
-                    loadAvailableSlots();
-                });
-            }
+                dateInput.value = formatted;
+                selectedDateLabel.textContent = formatted;
+
+                renderCalendar();
+                loadAvailableSlots();
+            });
 
             calendarGrid.appendChild(btn);
         }
-    }
-
-    async function loadCalendarAvailability() {
-        const serviceId = serviceSelect.value;
-        const dentistId = dentistInput.value;
-        const month = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`;
-
-        monthAvailabilityMap = {};
-
-        if (!serviceId) {
-            renderCalendar();
-            return;
-        }
-
-        let url = `{{ route('booking.calendar.availability') }}?month=${encodeURIComponent(month)}&service_id=${encodeURIComponent(serviceId)}`;
-        if (dentistId) {
-            url += `&dentist_id=${encodeURIComponent(dentistId)}`;
-        }
-
-        try {
-            const response = await fetch(url);
-
-            if (!response.ok) {
-                throw new Error('Failed to load calendar availability');
-            }
-
-            const result = await response.json();
-            monthAvailabilityMap = result?.dates || {};
-        } catch (error) {
-            console.error(error);
-            monthAvailabilityMap = {};
-        }
-
-        renderCalendar();
     }
 
     function resetSelect(selectEl, placeholder) {
@@ -1134,23 +1115,6 @@ document.addEventListener('DOMContentLoaded', function () {
         populateSelect(barangayEl, addressData[region][province][city], 'Select Barangay', selectedBarangay);
     }
 
-    dentistCards.forEach(card => {
-        card.addEventListener('click', async function () {
-            dentistCards.forEach(item => item.classList.remove('active'));
-            this.classList.add('active');
-            dentistInput.value = this.dataset.dentistValue || '';
-
-            selectedDate = null;
-            dateInput.value = '';
-            selectedDateLabel.textContent = 'None';
-            hiddenTimeInput.value = '';
-            timeSlotGrid.innerHTML = '';
-            slotFeedback.textContent = 'Select a service and date to load available times.';
-
-            await loadCalendarAvailability();
-        });
-    });
-
     regionEl.addEventListener('change', function () {
         loadProvinces(this.value);
     });
@@ -1163,65 +1127,50 @@ document.addEventListener('DOMContentLoaded', function () {
         loadBarangays(regionEl.value, provinceEl.value, this.value);
     });
 
-    serviceSelect.addEventListener('change', async function () {
+    serviceSelect.addEventListener('change', function () {
         updateServiceMetaFromOption();
-        await loadServiceQuestions();
-
-        selectedDate = null;
-        dateInput.value = '';
-        selectedDateLabel.textContent = 'None';
-        hiddenTimeInput.value = '';
-        timeSlotGrid.innerHTML = '';
-        slotFeedback.textContent = 'Select a service and date to load available times.';
-
-        await loadCalendarAvailability();
+        loadServiceQuestions();
+        loadAvailableSlots();
     });
 
-    prevMonthBtn.addEventListener('click', async function () {
+    prevMonthBtn.addEventListener('click', function () {
         currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-        await loadCalendarAvailability();
-    });
-
-    nextMonthBtn.addEventListener('click', async function () {
-        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-        await loadCalendarAvailability();
-    });
-
-    async function initializeBookingCalendar() {
-        updateServiceMetaFromOption();
-        await loadServiceQuestions();
-        await loadCalendarAvailability();
-
-        loadRegions();
-
-        if (oldRegion) {
-            loadProvinces(oldRegion, oldProvince);
-        } else {
-            resetSelect(provinceEl, 'Select Province');
-        }
-
-        if (oldRegion && oldProvince) {
-            loadCities(oldRegion, oldProvince, oldCity);
-        } else {
-            resetSelect(cityEl, 'Select City / Municipality');
-        }
-
-        if (oldRegion && oldProvince && oldCity) {
-            loadBarangays(oldRegion, oldProvince, oldCity, oldBarangay);
-        } else {
-            resetSelect(barangayEl, 'Select Barangay');
-        }
-
-        if (dateInput.value) {
-            selectedDateLabel.textContent = dateInput.value;
-            await loadAvailableSlots();
-        }
-    }
-
-    initializeBookingCalendar().catch(function (error) {
-        console.error('Booking calendar initialization failed:', error);
         renderCalendar();
     });
+
+    nextMonthBtn.addEventListener('click', function () {
+        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
+        renderCalendar();
+    });
+
+    updateServiceMetaFromOption();
+    loadServiceQuestions();
+    renderCalendar();
+
+    loadRegions();
+
+    if (oldRegion) {
+        loadProvinces(oldRegion, oldProvince);
+    } else {
+        resetSelect(provinceEl, 'Select Province');
+    }
+
+    if (oldRegion && oldProvince) {
+        loadCities(oldRegion, oldProvince, oldCity);
+    } else {
+        resetSelect(cityEl, 'Select City / Municipality');
+    }
+
+    if (oldRegion && oldProvince && oldCity) {
+        loadBarangays(oldRegion, oldProvince, oldCity, oldBarangay);
+    } else {
+        resetSelect(barangayEl, 'Select Barangay');
+    }
+
+    if (dateInput.value) {
+        selectedDateLabel.textContent = dateInput.value;
+        loadAvailableSlots();
+    }
 });
 </script>
 @endsection

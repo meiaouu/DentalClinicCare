@@ -1,154 +1,266 @@
-@extends('layouts.app')
+@php
+    $clinic = $clinic ?? \App\Models\ClinicSetting::query()->first();
+@endphp
 
-@section('content')
-    @include('layouts.partials.public-navbar', ['clinic' => $clinic])
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config('app.name', 'Dental Clinic Care') }}</title>
 
-    <section id="home" class="relative min-h-screen overflow-hidden">
+    <style>
+        :root {
+            --topbar-bg: #0b0f13;
+            --brand-dark: #0b0f13;
+            --nav-text: #1f2937;
+            --nav-text-light: #9ca3af;
+            --primary: #0f9d8a;
+            --primary-hover: #0d8574;
+            --white: #ffffff;
+            --page-bg: #f9fafb;
+            --border: #e5e7eb;
+            --shadow: 0 10px 30px rgba(0,0,0,0.06);
+        }
 
-    <!-- Background Image -->
-    <div class="absolute inset-0">
-        <img
-            src="{{ asset('images/dentalimg.jpg') }}"
-            alt="Dental clinic"
-            class="w-full h-full object-cover"
-        >
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--page-bg);
+            color: var(--brand-dark);
+        }
+
+        a {
+            text-decoration: none;
+        }
+
+        .site-header {
+            width: 100%;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+
+        .topbar {
+            background: var(--topbar-bg);
+            color: var(--white);
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .topbar-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 10px 16px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .topbar-left,
+        .topbar-right {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 18px;
+        }
+
+        .topbar-left span {
+            color: #d1d5db;
+        }
+
+        .topbar-left span::before {
+            content: "●";
+            color: var(--primary);
+            margin-right: 6px;
+            font-size: 10px;
+        }
+
+        .topbar-link {
+            color: #e5e7eb;
+            font-weight: 600;
+            transition: 0.2s ease;
+        }
+
+        .topbar-link:hover {
+            color: var(--primary);
+        }
+
+        .mainbar {
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .mainbar-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 16px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .brand-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 800;
+            font-size: 22px;
+            color: var(--brand-dark);
+        }
+
+        .brand-icon {
+            display: inline-flex;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: var(--primary);
+            color: var(--white);
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            box-shadow: 0 8px 20px rgba(15,157,138,0.25);
+            flex-shrink: 0;
+        }
+
+        .brand-name {
+            line-height: 1.2;
+        }
+
+        .main-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 22px;
+            font-size: 14px;
+            font-weight: 700;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .main-nav a {
+            color: var(--nav-text);
+            transition: 0.2s ease;
+        }
+
+        .main-nav a:hover,
+        .main-nav a.active-link {
+            color: var(--primary);
+        }
+
+        .muted-link {
+            color: var(--nav-text-light);
+        }
+
+        .book-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 22px;
+            background: var(--primary);
+            color: var(--white);
+            border-radius: 999px;
+            font-weight: 800;
+            white-space: nowrap;
+            transition: 0.2s ease;
+            box-shadow: 0 10px 25px rgba(15,157,138,0.25);
+        }
+
+        .book-btn:hover {
+            background: var(--primary-hover);
+            color: var(--white);
+        }
+
+        .site-content {
+            padding-top: 110px;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 991px) {
+            .topbar-inner,
+            .mainbar-inner {
+                justify-content: center;
+                text-align: center;
+            }
+
+            .brand-link {
+                justify-content: center;
+            }
+
+            .main-nav {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .brand-link {
+                font-size: 18px;
+            }
+
+            .main-nav {
+                gap: 14px;
+                font-size: 13px;
+            }
+
+            .book-btn {
+                width: 100%;
+            }
+
+            .site-content {
+                padding-top: 135px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <div class="topbar">
+        <div class="topbar-inner">
+            <div class="topbar-left">
+                <span>{{ $clinic?->contact_number ?? '+63 900-1234-5678' }}</span>
+                <span>{{ $clinic?->clinic_email ?? 'abcdefgfh@gmail.com' }}</span>
+                <span>{{ $clinic?->clinic_location ?? 'Purok 5, Sta. Rosa, Nueva Ecija' }}</span>
+            </div>
+
+            <div class="topbar-right">
+                <a href="{{ $clinic?->facebook_url ?: '#' }}" class="topbar-link">Facebook</a>
+                <a href="{{ $clinic?->instagram_url ?: '#' }}" class="topbar-link">Instagram</a>
+                <a href="{{ $clinic?->messenger_url ?: '#' }}" class="topbar-link">Messenger</a>
+            </div>
+        </div>
     </div>
 
-    <!-- Dark Overlay -->
-    <div class="absolute inset-0 bg-slate-900/60"></div>
-
-    <!-- Content -->
-    <div class="relative z-10 max-w-6xl mx-auto px-6 py-40 text-white">
-        <p class="text-lg mb-4 text-slate-200">Professional Dental Care</p>
-
-        <h1 class="text-5xl font-extrabold leading-tight mb-6">
-            Healthy Smiles<br>Start Here
-        </h1>
-
-        <p class="max-w-xl text-lg text-slate-200 mb-8">
-            Book appointments easily, explore services, and receive reliable care.
-        </p>
-
-        <div class="flex gap-4 flex-wrap">
-            <a href="{{ route('booking.entry') }}"
-               class="px-6 py-3 bg-blue-600 rounded-full font-semibold">
-                Book Now
+    <div class="mainbar">
+        <div class="mainbar-inner">
+            <a href="{{ route('home') }}" class="brand-link">
+                <span class="brand-icon">D</span>
+                <span class="brand-name">{{ $clinic?->clinic_name ?? 'Dr Brendalyn Wansi Calacat' }}</span>
             </a>
 
-            <a href="#services"
-               class="px-6 py-3 border border-white rounded-full font-semibold">
-                View Services
+            <a href="{{ route('booking.entry') }}" class="book-btn">
+                Book an Appointment
             </a>
         </div>
     </div>
+</header>
 
-</section>
+<main class="site-content">
+    @yield('content')
+</main>
 
-    <section id="services" class="py-24 bg-white scroll-mt-28">
-        <div class="max-w-6xl mx-auto px-4 lg:px-6">
-            <div class="text-center mb-14">
-                <p class="text-blue-600 font-semibold mb-2">Our Services</p>
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Dental services for every smile</h2>
-                <p class="text-slate-600 mt-4 max-w-2xl mx-auto">
-                    Explore some of the services available in the clinic.
-                </p>
-            </div>
-
-            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                @foreach ($services as $service)
-                    <div class="bg-slate-50 rounded-3xl p-6 shadow-sm hover:shadow-md transition border border-slate-100">
-                        <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-600 flex items-center justify-center font-bold mb-4">
-                            {{ strtoupper(substr($service['name'], 0, 1)) }}
-                        </div>
-                        <h3 class="text-xl font-semibold text-slate-900 mb-3">{{ $service['name'] }}</h3>
-                        <p class="text-slate-600 leading-relaxed">{{ $service['description'] }}</p>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    <section id="gallery" class="py-24 bg-slate-100 scroll-mt-28">
-        <div class="max-w-6xl mx-auto px-4 lg:px-6">
-            <div class="text-center mb-14">
-                <p class="text-blue-600 font-semibold mb-2">Gallery</p>
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Inside our clinic</h2>
-            </div>
-
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="rounded-3xl overflow-hidden shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&w=900&q=80" alt="Clinic 1" class="w-full h-72 object-cover">
-                </div>
-                <div class="rounded-3xl overflow-hidden shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1606811971618-4486d14f3f99?auto=format&fit=crop&w=900&q=80" alt="Clinic 2" class="w-full h-72 object-cover">
-                </div>
-                <div class="rounded-3xl overflow-hidden shadow-sm">
-                    <img src="https://images.unsplash.com/photo-1620775997736-4565bb35d2f0?auto=format&fit=crop&w=900&q=80" alt="Clinic 3" class="w-full h-72 object-cover">
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="about" class="py-24 bg-white scroll-mt-28">
-        <div class="max-w-6xl mx-auto px-4 lg:px-6 grid lg:grid-cols-2 gap-14 items-center">
-            <div>
-                <p class="text-blue-600 font-semibold mb-2">About Clinic</p>
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-6">
-                    Comfortable, modern, and patient-friendly care
-                </h2>
-                <p class="text-slate-600 leading-8 mb-4">
-                    We focus on making every visit feel organized, welcoming, and professional.
-                    From consultation to follow-up care, our clinic supports both new and returning patients.
-                </p>
-                <p class="text-slate-600 leading-8">
-                    Our goal is to provide quality dental services while making appointment booking
-                    and clinic communication simple and convenient.
-                </p>
-            </div>
-
-            <div class="rounded-3xl overflow-hidden shadow-lg">
-                <img src="https://images.unsplash.com/photo-1588776813677-77aaf5595b83?auto=format&fit=crop&w=1200&q=80" alt="About clinic" class="w-full h-[420px] object-cover">
-            </div>
-        </div>
-    </section>
-
-    <section id="contact" class="py-24 bg-slate-100 scroll-mt-28">
-        <div class="max-w-6xl mx-auto px-4 lg:px-6">
-            <div class="text-center mb-12">
-                <p class="text-blue-600 font-semibold mb-2">Contact</p>
-                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Get in touch with us</h2>
-            </div>
-
-            <div class="grid lg:grid-cols-2 gap-8">
-                <div class="bg-white rounded-3xl p-8 shadow-sm">
-                    <h3 class="text-2xl font-semibold mb-6">Clinic Information</h3>
-
-                    <div class="space-y-4 text-slate-700">
-                        <p><span class="font-semibold">Phone:</span> {{ $clinic?->contact_number ?? '+63 900 123 4567' }}</p>
-                        <p><span class="font-semibold">Email:</span> {{ $clinic?->clinic_email ?? 'clinic@email.com' }}</p>
-                        <p><span class="font-semibold">Location:</span> {{ $clinic?->clinic_location ?? 'Quezon City, Philippines' }}</p>
-                        <p><span class="font-semibold">Clinic Hours:</span> {{ $clinic?->open_time ?? '08:00 AM' }} - {{ $clinic?->close_time ?? '05:00 PM' }}</p>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-3xl p-8 shadow-sm">
-                    <h3 class="text-2xl font-semibold mb-6">Need an appointment?</h3>
-                    <p class="text-slate-600 mb-6">
-                        Book your visit in a few steps and let the clinic review your preferred date, service, and dentist.
-                    </p>
-
-                    <a href="{{ route('booking.create') }}"
-                       class="inline-flex items-center px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition">
-                        Book an Appointment
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div id="chat" class="fixed bottom-6 right-6 z-50">
-        <button class="w-16 h-16 rounded-full bg-white text-slate-900 shadow-xl border border-slate-200 text-sm font-bold hover:scale-105 transition">
-            Chat
-        </button>
-    </div>
-@endsection
+</body>
+</html>

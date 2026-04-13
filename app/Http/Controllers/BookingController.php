@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\BookingReviewRequest;
 use App\Models\AppointmentRequest;
 use App\Models\AppointmentRequestAnswer;
-use App\Models\Dentist;
 use App\Models\Service;
 use App\Models\ServiceOption;
 use App\Services\Booking\BookingAvailabilityService;
@@ -64,13 +63,8 @@ class BookingController extends Controller
             ->orderBy('service_name')
             ->get();
 
-        $dentists = Dentist::query()
-            ->where('is_active', 1)
-            ->get();
-
         return view('public.booking.form', [
             'services' => $services,
-            'dentists' => $dentists,
             'isGuest' => true,
             'patient' => null,
             'prefillContact' => $normalized,
@@ -84,15 +78,10 @@ class BookingController extends Controller
             ->orderBy('service_name')
             ->get();
 
-        $dentists = Dentist::query()
-            ->where('is_active', 1)
-            ->get();
-
         $patient = optional(Auth::user())->patient;
 
         return view('public.booking.form', [
             'services' => $services,
-            'dentists' => $dentists,
             'isGuest' => false,
             'patient' => $patient,
             'prefillContact' => null,
@@ -107,20 +96,9 @@ class BookingController extends Controller
             $validated = $this->normalizePhoneFields($validated);
 
             $service = Service::query()->findOrFail($validated['service_id']);
-            $dentist = null;
 
-            if (!empty($validated['preferred_dentist_id'])) {
-                $dentist = Dentist::query()
-                    ->where('dentist_id', $validated['preferred_dentist_id'])
-                    ->where('is_active', 1)
-                    ->first();
-
-                if (!$dentist) {
-                    return back()
-                        ->withErrors(['preferred_dentist_id' => 'Selected dentist is not available.'])
-                        ->withInput();
-                }
-            }
+            // Public booking no longer allows patient/guest dentist selection.
+            $validated['preferred_dentist_id'] = null;
 
             $preferredStartTime = $this->normalizeTimeValue($validated['preferred_start_time']);
             $preferredEndTime = $this->computeEndTime(
@@ -133,7 +111,7 @@ class BookingController extends Controller
                 $validated['preferred_date'],
                 $preferredStartTime,
                 (int) $validated['service_id'],
-                !empty($validated['preferred_dentist_id']) ? (int) $validated['preferred_dentist_id'] : null
+                null
             );
 
             $validated['preferred_start_time'] = $preferredStartTime;
@@ -146,7 +124,7 @@ class BookingController extends Controller
             return view('public.booking.review', [
                 'data' => $validated,
                 'service' => $service,
-                'dentist' => $dentist,
+                'dentist' => null,
                 'isGuest' => !Auth::check(),
             ]);
         } catch (\Throwable $e) {
@@ -181,12 +159,12 @@ class BookingController extends Controller
                     (int) $service->estimated_duration_minutes
                 );
 
-                // Revalidate again inside transaction
+                // Revalidate again inside transaction in clinic-only mode.
                 $this->ensureSlotIsStillAvailable(
                     $data['preferred_date'],
                     $preferredStartTime,
                     (int) $data['service_id'],
-                    !empty($data['preferred_dentist_id']) ? (int) $data['preferred_dentist_id'] : null
+                    null
                 );
 
                 $patientId = $this->resolvePatientId();
@@ -199,13 +177,14 @@ class BookingController extends Controller
                     'guest_last_name' => $data['guest_last_name'] ?? null,
                     'guest_contact_number' => $data['guest_contact_number'] ?? null,
                     'guest_email' => $data['guest_email'] ?? null,
-                    'preferred_dentist_id' => $data['preferred_dentist_id'] ?? null,
+                    'preferred_dentist_id' => null,
                     'service_id' => $data['service_id'],
                     'preferred_date' => $data['preferred_date'],
                     'preferred_start_time' => $preferredStartTime,
                     'notes' => $this->buildNotesPayload([
                         ...$data,
                         'preferred_end_time' => $preferredEndTime,
+                        'preferred_dentist_id' => null,
                     ]),
                     'request_status' => 'pending',
                 ]);
@@ -272,22 +251,34 @@ class BookingController extends Controller
     }
 
     public function availableSlots(Request $request): JsonResponse
-{
-    $validated = $request->validate([
-        'date' => ['required', 'date'],
-        'service_id' => ['required', 'integer', 'exists:services,service_id'],
-        'dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
-    ]);
+    {
+        $validated = $request->validate([
+            'date' => ['required', 'date'],
+            'service_id' => ['required', 'integer', 'exists:services,service_id'],
+        ]);
 
-    $date = $validated['date'];
-    $serviceId = (int) $validated['service_id'];
-    $dentistId = !empty($validated['dentist_id']) ? (int) $validated['dentist_id'] : null;
+        return response()->json([
+            'clinic_hours' => $this->availabilityService->getClinicHoursForDate($validated['date']),
+            'available_slots' => $this->availabilityService->getAvailableSlots(
+                $validated['date'],
+                (int) $validated['service_id'],
+                null
+            ),
+        ]);
+    }
 
-    return response()->json([
-        'available_slots' => $this->availabilityService->getAvailableSlots($date, $serviceId, $dentistId),
-        'clinic_hours' => $this->availabilityService->getClinicHoursForDate($date),
-    ]);
-}
+    public function calendarAvailability(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'month' => ['required', 'date_format:Y-m'],
+        ]);
+
+        return response()->json([
+            'dates' => $this->availabilityService->getClinicCalendarAvailabilityForMonth(
+                $validated['month']
+            ),
+        ]);
+    }
 
     protected function normalizePhoneFields(array $validated): array
     {
@@ -411,7 +402,7 @@ class BookingController extends Controller
                 'preferred_start_time' => $data['preferred_start_time'] ?? null,
                 'preferred_end_time' => $data['preferred_end_time'] ?? null,
                 'service_id' => $data['service_id'] ?? null,
-                'preferred_dentist_id' => $data['preferred_dentist_id'] ?? null,
+                'preferred_dentist_id' => null,
             ],
             'notes_or_concerns' => $data['notes'] ?? null,
         ];
