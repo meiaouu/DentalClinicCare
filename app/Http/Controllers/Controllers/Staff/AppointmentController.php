@@ -8,6 +8,11 @@ use App\Services\Appointment\AppointmentStatusService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use App\Http\Requests\Staff\StoreStaffAppointmentRequest;
+use App\Models\Dentist;
+use App\Models\Patient;
+use App\Models\Service;
+use App\Services\Appointment\StaffAppointmentCreationService;
 
 class AppointmentController extends Controller
 {
@@ -36,17 +41,23 @@ class AppointmentController extends Controller
     }
 
     public function show(Appointment $appointment): View
-    {
-        $appointment->load([
-            'patient',
-            'dentist.user',
-            'service',
-            'request',
-            'statusLogs.changedBy',
-        ]);
+{
+    $appointment->load([
+        'patient',
+        'dentist.user',
+        'service',
+        'request',
+        'statusLogs',
+    ]);
 
-        return view('staff.appointments.show', compact('appointment'));
+    $patientSummary = null;
+
+    if ($appointment->patient) {
+        $patientSummary = $appointment->patient->appointment_status_summary;
     }
+
+    return view('staff.appointments.show', compact('appointment', 'patientSummary'));
+}
 
     public function markArrived(Request $request, Appointment $appointment): RedirectResponse
     {
@@ -117,4 +128,48 @@ class AppointmentController extends Controller
             return back()->withErrors(['status' => $e->getMessage()]);
         }
     }
+
+public function create()
+{
+    $patients = \App\Models\Patient::query()
+        ->orderBy('last_name')
+        ->orderBy('first_name')
+        ->get();
+
+    $services = \App\Models\Service::query()
+        ->where('is_active', 1)
+        ->orderBy('service_name')
+        ->get();
+
+    $dentists = \App\Models\Dentist::query()
+        ->with('user')
+        ->where('is_active', 1)
+        ->get();
+
+    return view('staff.appointments.create', compact('patients', 'services', 'dentists'));
+}
+
+public function store(
+    StoreStaffAppointmentRequest $request,
+    StaffAppointmentCreationService $creationService
+): RedirectResponse {
+    try {
+        $appointment = $creationService->createDirectAppointment(
+            patientId: (int) $request->input('patient_id'),
+            serviceId: (int) $request->input('service_id'),
+            dentistId: (int) $request->input('dentist_id'),
+            appointmentDate: $request->input('appointment_date'),
+            startTime: $request->input('start_time'),
+            remarks: $request->input('remarks')
+        );
+
+        return redirect()
+            ->route('staff.appointments.show', $appointment->appointment_id)
+            ->with('success', 'Appointment created successfully.');
+    } catch (\Throwable $e) {
+        return back()
+            ->withErrors(['appointment' => $e->getMessage()])
+            ->withInput();
+    }
+}
 }

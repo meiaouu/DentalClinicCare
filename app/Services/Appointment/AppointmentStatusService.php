@@ -4,12 +4,18 @@ namespace App\Services\Appointment;
 
 use App\Models\Appointment;
 use App\Models\AppointmentStatusLog;
+use App\Services\Patient\GuestPatientConversionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 class AppointmentStatusService
 {
+    public function __construct(
+        protected GuestPatientConversionService $guestPatientConversionService
+    ) {
+    }
+
     public function markArrived(Appointment $appointment, ?string $remarks = null): Appointment
     {
         if (!in_array($appointment->status, ['confirmed', 'rescheduled'], true)) {
@@ -33,16 +39,26 @@ class AppointmentStatusService
             throw new RuntimeException('Only confirmed or rescheduled appointments can be checked in.');
         }
 
-        return $this->updateAppointmentStatus(
-            appointment: $appointment,
-            newStatus: 'checked_in',
-            updates: [
-                'arrival_status' => 'checked_in',
-                'checked_in_at' => now(),
-                'remarks' => $remarks ?? $appointment->remarks,
-            ],
-            logRemarks: $remarks ?: 'Patient checked in.'
-        );
+        return DB::transaction(function () use ($appointment, $remarks) {
+            $updatedAppointment = $this->updateAppointmentStatus(
+                appointment: $appointment,
+                newStatus: 'checked_in',
+                updates: [
+                    'arrival_status' => 'checked_in',
+                    'checked_in_at' => now(),
+                    'remarks' => $remarks ?? $appointment->remarks,
+                ],
+                logRemarks: $remarks ?: 'Patient checked in.'
+            );
+
+            // Automatically convert guest to patient if needed after real in-clinic check-in.
+            $this->guestPatientConversionService->convertIfNeeded($updatedAppointment);
+
+            return $updatedAppointment->fresh([
+                'patient',
+                'request',
+            ]);
+        });
     }
 
     public function markInProgress(Appointment $appointment, ?string $remarks = null): Appointment

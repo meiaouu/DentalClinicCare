@@ -59,20 +59,25 @@ class AppointmentRequest extends Model
         return $this->belongsTo(Service::class, 'service_id', 'service_id');
     }
 
-    public function patient(): BelongsTo
-    {
-        return $this->belongsTo(Patient::class, 'patient_id', 'patient_id');
-    }
+   public function patient()
+{
+    return $this->belongsTo(\App\Models\Patient::class, 'patient_id', 'patient_id');
+}
 
     public function preferredDentist(): BelongsTo
     {
         return $this->belongsTo(Dentist::class, 'preferred_dentist_id', 'dentist_id');
     }
 
+
     public function reviewedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'reviewed_by_user_id', 'id');
     }
+    public function messageThreads()
+{
+    return $this->hasMany(\App\Models\MessageThread::class, 'appointment_request_id', 'request_id');
+}
 
     public function convertedAppointment(): BelongsTo
     {

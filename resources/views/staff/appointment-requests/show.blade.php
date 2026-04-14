@@ -114,7 +114,7 @@
 
     .request-grid {
         display: grid;
-        grid-template-columns: 1.7fr 1fr;
+        grid-template-columns: 1.65fr 1fr;
         gap: 22px;
         align-items: start;
     }
@@ -135,13 +135,13 @@
         font-size: 18px;
         font-weight: 800;
         color: #0f172a;
-        margin: 0 0 16px;
+        margin: 0 0 14px;
         padding-bottom: 12px;
         border-bottom: 1px solid #eef2f7;
     }
 
     .panel-subtitle {
-        margin: -6px 0 14px;
+        margin: -4px 0 14px;
         color: #64748b;
         font-size: 13px;
         line-height: 1.6;
@@ -278,12 +278,6 @@
     .btn-success { background: #16a34a; }
     .btn-warning { background: #f59e0b; }
     .btn-danger { background: #dc2626; }
-    .btn-secondary { background: #334155; }
-    .btn-light {
-        background: #e2e8f0;
-        color: #0f172a;
-        border: 1px solid #cbd5e1;
-    }
 
     .helper-text {
         font-size: 13px;
@@ -295,7 +289,7 @@
         display: flex;
         gap: 8px;
         flex-wrap: wrap;
-        margin: 14px 0;
+        margin: 12px 0 14px;
     }
 
     .inline-btn {
@@ -332,7 +326,7 @@
 
     .dentist-highlight {
         border: 2px solid #0f9d8a;
-        background: #ecfdf5;
+        background: linear-gradient(180deg, #ecfdf5 0%, #f8fffb 100%);
         border-radius: 14px;
         padding: 14px;
         margin-bottom: 14px;
@@ -353,22 +347,53 @@
         color: #0f172a;
     }
 
-    .calendar-toolbar {
+    .availability-tags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .availability-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .availability-tag.primary {
+        background: #ecfdf5;
+        color: #0f766e;
+        border-color: #a7f3d0;
+    }
+
+    .availability-tag.muted {
+        background: #f8fafc;
+        color: #64748b;
+        border-color: #e2e8f0;
+    }
+
+    .week-toolbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 14px;
         gap: 10px;
+        margin-bottom: 12px;
     }
 
-    .calendar-month-label {
-        margin: 0;
-        font-size: 16px;
+    .week-label {
+        font-size: 15px;
         font-weight: 800;
         color: #0f172a;
+        margin: 0;
     }
 
-    .calendar-btn {
+    .week-nav {
         width: 38px;
         height: 38px;
         border-radius: 10px;
@@ -379,28 +404,75 @@
         cursor: pointer;
     }
 
-    .calendar-weekdays {
+    .week-strip-wrap {
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .week-strip {
         display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-        margin-bottom: 10px;
+        grid-template-columns: repeat(7, minmax(86px, 1fr));
+        gap: 10px;
+        min-width: 670px;
+    }
+
+    .week-day-card {
+        border: 1px solid #dbe4ea;
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 12px 10px;
         text-align: center;
-        font-size: 12px;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .week-day-card:hover:not(.disabled) {
+        border-color: #0f9d8a;
+        background: #f0fdfa;
+    }
+
+    .week-day-card.active {
+        border-color: #0f9d8a;
+        background: #ecfdf5;
+        box-shadow: inset 0 0 0 1px #0f9d8a;
+    }
+
+    .week-day-card.disabled {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+        cursor: not-allowed;
+        opacity: .8;
+    }
+
+    .week-day-name {
+        font-size: 11px;
         font-weight: 800;
         color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 5px;
     }
 
-    #staffCalendarGrid {
-        display: grid;
-        grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
+    .week-day-card.active .week-day-name {
+        color: #0f766e;
     }
 
-    #staffCalendarGrid button {
-        min-height: 42px;
-        border-radius: 10px;
-        font-weight: 700;
-        cursor: pointer;
+    .week-day-number {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .week-day-card.disabled .week-day-number {
+        color: #94a3b8;
+    }
+
+    .week-day-sub {
+        margin-top: 6px;
+        font-size: 11px;
+        color: #64748b;
     }
 
     .slot-grid {
@@ -434,7 +506,7 @@
     }
 
     .time-slot-btn.disabled {
-        background: #f8fafc;
+        background: #f1f5f9;
         color: #94a3b8;
         border-color: #e2e8f0;
         cursor: not-allowed;
@@ -450,6 +522,10 @@
         }
 
         .summary-row {
+            grid-template-columns: 1fr;
+        }
+
+        .slot-grid {
             grid-template-columns: 1fr;
         }
     }
@@ -498,7 +574,7 @@
                     <div class="summary-row">
                         <div class="summary-key">Status</div>
                         <div class="summary-value">
-                            <span class="status-badge" data-status-style="{!! $statusStyle !!}">
+                            <span class="status-badge" style="@php echo $statusStyle; @endphp">
                                 {{ ucfirst(str_replace('_', ' ', $requestItem->request_status)) }}
                             </span>
                         </div>
@@ -600,11 +676,16 @@
             @if(!$hasConvertedAppointment)
                 <div class="panel">
                     <h2 class="panel-title">Confirm Appointment</h2>
-                    <p class="panel-subtitle">This section is the final staff decision for appointment approval.</p>
+                    <p class="panel-subtitle">Select the dentist first, then pick a date. Time slots load automatically when a date is clicked.</p>
 
                     <div class="dentist-highlight">
                         <div class="dentist-highlight-label">Assigned Dentist</div>
                         <div class="dentist-highlight-value" id="approvedDentistLabel">{{ $displayPreferredDentist }}</div>
+
+                        <div class="availability-tags">
+                            <span class="availability-tag primary" id="availabilityDentistTag">Dentist selection required</span>
+                            <span class="availability-tag muted" id="availabilityModeTag">Availability tag pending</span>
+                        </div>
                     </div>
 
                     <form method="POST" action="{{ route('staff.appointment-requests.confirm', $requestItem->request_id) }}" id="confirmAppointmentForm">
@@ -642,31 +723,26 @@
                         </div>
 
                         <div class="inline-actions">
-                            <button type="button" class="inline-btn inline-btn-edit" data-edit-target="dateEditBlock">Edit Date</button>
-                            <button type="button" class="inline-btn inline-btn-edit" data-edit-target="timeEditBlock">Edit Time</button>
+                            <button type="button" class="inline-btn inline-btn-edit" data-edit-target="dateEditBlock">Edit Date & Time</button>
                             <button type="button" class="inline-btn inline-btn-reset" id="resetConfirmValuesBtn">Reset</button>
                         </div>
 
-                        <div class="edit-block" id="dateEditBlock">
-                            <div class="calendar-toolbar">
-                                <button type="button" class="calendar-btn" id="prevMonthBtn">&lt;</button>
-                                <h6 id="calendarMonthLabel" class="calendar-month-label">Select Date</h6>
-                                <button type="button" class="calendar-btn" id="nextMonthBtn">&gt;</button>
+                        <div class="edit-block active" id="dateEditBlock">
+                            <div class="week-toolbar">
+                                <button type="button" class="week-nav" id="prevWeekBtn">&lt;</button>
+                                <h6 id="weekRangeLabel" class="week-label">Select Week</h6>
+                                <button type="button" class="week-nav" id="nextWeekBtn">&gt;</button>
                             </div>
 
-                            <div class="calendar-weekdays">
-                                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+                            <div class="week-strip-wrap">
+                                <div id="staffWeekStrip" class="week-strip"></div>
                             </div>
-
-                            <div id="staffCalendarGrid"></div>
 
                             <div class="helper-text" style="margin-top:12px;">
                                 Selected date: <strong id="calendarSelectedDateText">{{ $oldConfirmDate ?: 'None' }}</strong>
                             </div>
-                        </div>
 
-                        <div class="edit-block" id="timeEditBlock">
-                            <div class="form-group">
+                            <div style="margin-top:14px;">
                                 <label class="form-label">Available Time Slots</label>
                                 <div id="confirmTimeSlotGrid" class="slot-grid"></div>
                                 <div id="confirmSlotFeedback" class="helper-text" style="margin-top:10px;">
@@ -675,7 +751,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group" style="margin-top:14px;">
                             <label class="form-label">Staff Remarks</label>
                             <textarea name="remarks">{{ old('remarks') }}</textarea>
                         </div>
@@ -735,6 +811,7 @@
                         </div>
                         <button type="submit" class="btn btn-danger">Reject Request</button>
                     </form>
+
                 </div>
             @else
                 <div class="panel">
@@ -779,15 +856,18 @@ document.addEventListener('DOMContentLoaded', function () {
     const approvedDateLabel = document.getElementById('approvedDateLabel');
     const approvedTimeLabel = document.getElementById('approvedTimeLabel');
 
+    const availabilityDentistTag = document.getElementById('availabilityDentistTag');
+    const availabilityModeTag = document.getElementById('availabilityModeTag');
+
     const confirmDentistSelect = document.getElementById('confirmDentistSelect');
     const confirmTimeSlotGrid = document.getElementById('confirmTimeSlotGrid');
     const confirmSlotFeedback = document.getElementById('confirmSlotFeedback');
 
-    const calendarGrid = document.getElementById('staffCalendarGrid');
-    const calendarMonthLabel = document.getElementById('calendarMonthLabel');
+    const staffWeekStrip = document.getElementById('staffWeekStrip');
+    const weekRangeLabel = document.getElementById('weekRangeLabel');
     const calendarSelectedDateText = document.getElementById('calendarSelectedDateText');
-    const prevMonthBtn = document.getElementById('prevMonthBtn');
-    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const prevWeekBtn = document.getElementById('prevWeekBtn');
+    const nextWeekBtn = document.getElementById('nextWeekBtn');
 
     const toggleButtons = document.querySelectorAll('[data-edit-target]');
     const resetConfirmValuesBtn = document.getElementById('resetConfirmValuesBtn');
@@ -795,15 +875,21 @@ document.addEventListener('DOMContentLoaded', function () {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let currentMonth = confirmAppointmentDate.value
-        ? new Date(confirmAppointmentDate.value + 'T00:00:00')
-        : new Date(today.getFullYear(), today.getMonth(), 1);
-
-    currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    const now = new Date();
 
     let selectedDate = confirmAppointmentDate.value
         ? new Date(confirmAppointmentDate.value + 'T00:00:00')
         : null;
+
+    function startOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        d.setDate(d.getDate() - day);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
+    let currentWeekStart = startOfWeek(selectedDate || today);
 
     function normalizeTime(value) {
         if (!value) return '';
@@ -815,6 +901,24 @@ document.addEventListener('DOMContentLoaded', function () {
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    function formatDayShort(date) {
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+
+    function formatMonthShort(date) {
+        return date.toLocaleDateString('en-US', { month: 'short' });
+    }
+
+    function formatWeekRange(startDate) {
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+
+        const startText = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const endText = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        return `${startText} - ${endText}`;
     }
 
     function formatHourLabel(time24) {
@@ -832,8 +936,12 @@ document.addEventListener('DOMContentLoaded', function () {
         if (confirmDentistSelect && confirmDentistSelect.value) {
             const option = confirmDentistSelect.options[confirmDentistSelect.selectedIndex];
             approvedDentistLabel.textContent = option?.dataset.label || option?.textContent || '—';
+            availabilityDentistTag.textContent = 'Dentist selected';
+            availabilityDentistTag.className = 'availability-tag primary';
         } else {
             approvedDentistLabel.textContent = requestDefaults.dentistLabel || 'Clinic will assign';
+            availabilityDentistTag.textContent = 'Select dentist first';
+            availabilityDentistTag.className = 'availability-tag muted';
         }
 
         calendarSelectedDateText.textContent = confirmAppointmentDate.value || 'None';
@@ -854,6 +962,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (confirmDentistSelect) {
         confirmDentistSelect.addEventListener('change', function () {
             confirmDentistId.value = this.value;
+            confirmStartTime.value = '';
             updateSummaryLabels();
             loadAvailableSlots();
         });
@@ -869,27 +978,82 @@ document.addEventListener('DOMContentLoaded', function () {
         }
 
         selectedDate = requestDefaults.date ? new Date(requestDefaults.date + 'T00:00:00') : null;
-        currentMonth = selectedDate
-            ? new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1)
-            : new Date(today.getFullYear(), today.getMonth(), 1);
+        currentWeekStart = startOfWeek(selectedDate || today);
 
-        renderCalendar();
+        renderWeekStrip();
         updateSummaryLabels();
         loadAvailableSlots();
     });
+
+    function renderWeekStrip() {
+        staffWeekStrip.innerHTML = '';
+        weekRangeLabel.textContent = formatWeekRange(currentWeekStart);
+
+        for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(currentWeekStart);
+            dayDate.setDate(currentWeekStart.getDate() + i);
+            dayDate.setHours(0, 0, 0, 0);
+
+            const dateStr = formatDateLocal(dayDate);
+            const isPast = dayDate < today;
+            const isSelected = selectedDate && formatDateLocal(selectedDate) === dateStr;
+
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'week-day-card';
+            if (isPast) {
+                card.classList.add('disabled');
+                card.disabled = true;
+            }
+            if (isSelected) {
+                card.classList.add('active');
+            }
+
+            card.innerHTML = `
+                <div class="week-day-name">${formatDayShort(dayDate)}</div>
+                <div class="week-day-number">${dayDate.getDate()}</div>
+                <div class="week-day-sub">${formatMonthShort(dayDate)}</div>
+            `;
+
+            if (!isPast) {
+                card.addEventListener('click', function () {
+                    selectedDate = dayDate;
+                    confirmAppointmentDate.value = dateStr;
+                    confirmStartTime.value = '';
+                    updateSummaryLabels();
+                    renderWeekStrip();
+                    loadAvailableSlots();
+                });
+            }
+
+            staffWeekStrip.appendChild(card);
+        }
+    }
+
+    function isSameLocalDate(a, b) {
+        return a.getFullYear() === b.getFullYear()
+            && a.getMonth() === b.getMonth()
+            && a.getDate() === b.getDate();
+    }
 
     async function loadAvailableSlots() {
         confirmTimeSlotGrid.innerHTML = '';
 
         if (!requestDefaults.serviceId || !confirmAppointmentDate.value) {
-            confirmSlotFeedback.textContent = 'Select a date to load available time slots.';
+            confirmSlotFeedback.textContent = 'Select a dentist and date to load available time slots.';
+            availabilityModeTag.textContent = 'Availability tag pending';
+            availabilityModeTag.className = 'availability-tag muted';
             return;
         }
 
-        let url = `{{ route('booking.available.slots') }}?service_id=${encodeURIComponent(requestDefaults.serviceId)}&date=${encodeURIComponent(confirmAppointmentDate.value)}`;
-        if (confirmDentistId.value) {
-            url += `&dentist_id=${encodeURIComponent(confirmDentistId.value)}`;
+        if (!confirmDentistId.value) {
+            confirmSlotFeedback.textContent = 'Select a dentist first before choosing a time.';
+            availabilityModeTag.textContent = 'Dentist not selected';
+            availabilityModeTag.className = 'availability-tag muted';
+            return;
         }
+
+        let url = `{{ route('booking.available.slots') }}?service_id=${encodeURIComponent(requestDefaults.serviceId)}&date=${encodeURIComponent(confirmAppointmentDate.value)}&dentist_id=${encodeURIComponent(confirmDentistId.value)}`;
 
         try {
             confirmSlotFeedback.textContent = 'Loading available time slots...';
@@ -909,6 +1073,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const slots = Array.isArray(result.available_slots) ? result.available_slots : [];
             const clinicHours = Array.isArray(result.clinic_hours) ? result.clinic_hours : [];
 
+            const availabilityTag = result.availability_tag || '';
+            if (availabilityTag) {
+                availabilityModeTag.textContent = availabilityTag;
+                availabilityModeTag.className = 'availability-tag primary';
+            } else {
+                availabilityModeTag.textContent = slots.length > 0 ? 'Dentist available' : 'No available slots';
+                availabilityModeTag.className = slots.length > 0 ? 'availability-tag primary' : 'availability-tag muted';
+            }
+
             if (clinicHours.length === 0) {
                 confirmSlotFeedback.textContent = 'No clinic hours configured for this date.';
                 return;
@@ -919,6 +1092,9 @@ document.addEventListener('DOMContentLoaded', function () {
                 availableMap[normalizeTime(slot.start_time)] = slot;
             });
 
+            const selectedDateObj = new Date(confirmAppointmentDate.value + 'T00:00:00');
+            const isTodaySelected = isSameLocalDate(selectedDateObj, now);
+
             clinicHours.forEach((hour) => {
                 const normalizedHour = normalizeTime(hour);
                 const btn = document.createElement('button');
@@ -926,7 +1102,13 @@ document.addEventListener('DOMContentLoaded', function () {
                 btn.className = 'time-slot-btn';
                 btn.textContent = formatHourLabel(normalizedHour);
 
-                if (availableMap[normalizedHour]) {
+                const [hh, mm, ss] = normalizedHour.split(':').map(Number);
+                const slotDateTime = new Date(selectedDateObj);
+                slotDateTime.setHours(hh, mm, ss || 0, 0);
+
+                const isPastSlot = isTodaySelected && slotDateTime <= now;
+
+                if (availableMap[normalizedHour] && !isPastSlot) {
                     btn.dataset.value = normalizedHour;
 
                     if ((confirmStartTime.value + ':00') === normalizedHour || confirmStartTime.value === normalizedHour) {
@@ -952,87 +1134,39 @@ document.addEventListener('DOMContentLoaded', function () {
                 : 'No available slots for the selected date.';
         } catch (error) {
             confirmSlotFeedback.textContent = 'Failed to load available slots.';
+            availabilityModeTag.textContent = 'Availability lookup failed';
+            availabilityModeTag.className = 'availability-tag muted';
             console.error(error);
         }
     }
 
-    function renderCalendar() {
-        calendarGrid.innerHTML = '';
+    prevWeekBtn.addEventListener('click', function () {
+        const newWeek = new Date(currentWeekStart);
+        newWeek.setDate(newWeek.getDate() - 7);
 
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-
-        calendarMonthLabel.textContent = currentMonth.toLocaleDateString('en-US', {
-            month: 'long',
-            year: 'numeric'
-        });
-
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const startWeekday = firstDay.getDay();
-        const totalDays = lastDay.getDate();
-
-        for (let i = 0; i < startWeekday; i++) {
-            const blank = document.createElement('div');
-            calendarGrid.appendChild(blank);
+        if (newWeek < startOfWeek(today)) {
+            currentWeekStart = startOfWeek(today);
+        } else {
+            currentWeekStart = newWeek;
         }
 
-        for (let day = 1; day <= totalDays; day++) {
-            const cellDate = new Date(year, month, day);
-            cellDate.setHours(0, 0, 0, 0);
-
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn-light';
-            btn.textContent = day;
-
-            const isPast = cellDate < today;
-            const isSelected = selectedDate && formatDateLocal(cellDate) === formatDateLocal(selectedDate);
-
-            if (isPast) {
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-            } else if (isSelected) {
-                btn.className = 'btn btn-secondary';
-            } else {
-                btn.className = 'btn-light';
-            }
-
-            btn.addEventListener('click', function () {
-                selectedDate = cellDate;
-                const formatted = formatDateLocal(cellDate);
-
-                confirmAppointmentDate.value = formatted;
-                updateSummaryLabels();
-                renderCalendar();
-                loadAvailableSlots();
-            });
-
-            calendarGrid.appendChild(btn);
-        }
-    }
-
-    prevMonthBtn.addEventListener('click', function () {
-        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-        renderCalendar();
+        renderWeekStrip();
     });
 
-    nextMonthBtn.addEventListener('click', function () {
-        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-        renderCalendar();
+    nextWeekBtn.addEventListener('click', function () {
+        const newWeek = new Date(currentWeekStart);
+        newWeek.setDate(newWeek.getDate() + 7);
+        currentWeekStart = newWeek;
+        renderWeekStrip();
     });
 
     updateSummaryLabels();
-    renderCalendar();
+    renderWeekStrip();
 
-    if (confirmAppointmentDate.value) {
+    if (confirmAppointmentDate.value && confirmDentistId.value) {
         loadAvailableSlots();
-    }
-
-    // Apply status badge styles
-    const statusBadge = document.querySelector('.status-badge');
-    if (statusBadge && statusBadge.dataset.statusStyle) {
-        statusBadge.setAttribute('style', statusBadge.dataset.statusStyle);
+    } else {
+        confirmSlotFeedback.textContent = 'Select a dentist and date to load available time slots.';
     }
 });
 </script>

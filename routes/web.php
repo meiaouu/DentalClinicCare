@@ -9,7 +9,10 @@ use App\Http\Controllers\Staff\AppointmentRequestController;
 use App\Http\Controllers\Staff\ClinicScheduleController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Patient\DashboardController as PatientDashboardController;
+use App\Http\Controllers\Staff\PatientController;
+use App\Http\Controllers\Staff\NotificationController;
+use App\Http\Controllers\Staff\MessageController;
 /*
 |--------------------------------------------------------------------------
 | Public
@@ -89,28 +92,55 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:staff'])->prefix('staff')->group(function () {
-    Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('staff.dashboard');
+Route::middleware(['auth', 'role:staff'])
+    ->prefix('staff')
+    ->name('staff.')
+    ->group(function () {
+        Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
-    Route::get('/appointment-requests', [AppointmentRequestController::class, 'index'])->name('staff.appointment-requests.index');
-    Route::get('/appointment-requests/{appointmentRequest}', [AppointmentRequestController::class, 'show'])->name('staff.appointment-requests.show');
-    Route::post('/appointment-requests/{appointmentRequest}/confirm', [AppointmentRequestController::class, 'confirm'])->name('staff.appointment-requests.confirm');
-    Route::post('/appointment-requests/{appointmentRequest}/reject', [AppointmentRequestController::class, 'reject'])->name('staff.appointment-requests.reject');
-    Route::post('/appointment-requests/{appointmentRequest}/reschedule', [AppointmentRequestController::class, 'reschedule'])->name('staff.appointment-requests.reschedule');
+        Route::get('/appointment-requests', [AppointmentRequestController::class, 'index'])->name('appointment-requests.index');
+        Route::get('/appointment-requests/{appointmentRequest}', [AppointmentRequestController::class, 'show'])->name('appointment-requests.show');
+        Route::post('/appointment-requests/{appointmentRequest}/confirm', [AppointmentRequestController::class, 'confirm'])->name('appointment-requests.confirm');
+        Route::post('/appointment-requests/{appointmentRequest}/reject', [AppointmentRequestController::class, 'reject'])->name('appointment-requests.reject');
+        Route::post('/appointment-requests/{appointmentRequest}/reschedule', [AppointmentRequestController::class, 'reschedule'])->name('appointment-requests.reschedule');
 
-    Route::get('/appointments', [AppointmentController::class, 'index'])->name('staff.appointments.index');
-    Route::get('/appointments/{appointment}', [AppointmentController::class, 'show'])->name('staff.appointments.show');
-    Route::post('/appointments/{appointment}/arrived', [AppointmentController::class, 'markArrived'])->name('staff.appointments.arrived');
-    Route::post('/appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])->name('staff.appointments.checkin');
-    Route::post('/appointments/{appointment}/in-progress', [AppointmentController::class, 'markInProgress'])->name('staff.appointments.inprogress');
-    Route::post('/appointments/{appointment}/complete', [AppointmentController::class, 'complete'])->name('staff.appointments.complete');
-    Route::post('/appointments/{appointment}/no-show', [AppointmentController::class, 'markNoShow'])->name('staff.appointments.noshow');
-    Route::post('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('staff.appointments.cancel');
+        Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
+        Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
+        Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
+        Route::get('/appointments/available-slots', [AppointmentController::class, 'availableSlots'])->name('appointments.available-slots');
+        Route::get('/appointments/{appointment}', [AppointmentController::class, 'show'])->name('appointments.show');
+        Route::post('/appointments/{appointment}/arrived', [AppointmentController::class, 'markArrived'])->name('appointments.arrived');
+        Route::post('/appointments/{appointment}/check-in', [AppointmentController::class, 'checkIn'])->name('appointments.checkin');
+        Route::post('/appointments/{appointment}/in-progress', [AppointmentController::class, 'markInProgress'])->name('appointments.inprogress');
+        Route::post('/appointments/{appointment}/complete', [AppointmentController::class, 'complete'])->name('appointments.complete');
+        Route::post('/appointments/{appointment}/no-show', [AppointmentController::class, 'markNoShow'])->name('appointments.noshow');
+        Route::post('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
 
-    Route::get('/clinic-schedule', [ClinicScheduleController::class, 'index'])->name('staff.clinic-schedule.index');
-    Route::post('/clinic-schedule/open-date', [ClinicScheduleController::class, 'openSpecificDate'])->name('staff.clinic-schedule.open-date');
-    Route::post('/clinic-schedule/block', [ClinicScheduleController::class, 'blockDateOrTime'])->name('staff.clinic-schedule.block');
-});
+        Route::get('/clinic-schedule', [ClinicScheduleController::class, 'index'])->name('clinic-schedule.index');
+        Route::post('/clinic-schedule/open-date', [ClinicScheduleController::class, 'openSpecificDate'])->name('clinic-schedule.open-date');
+        Route::post('/clinic-schedule/block', [ClinicScheduleController::class, 'blockDateOrTime'])->name('clinic-schedule.block');
+
+        Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
+        Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
+        Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
+        Route::get('/patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
+        Route::get('/notifications', [NotificationController::class, 'index'])
+    ->name('notifications.index');
+
+Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])
+    ->name('notifications.read');
+    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+Route::get('/messages/{thread}', [MessageController::class, 'show'])->name('messages.show');
+Route::post('/messages/{thread}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+
+Route::post('/patients/{patient}/messages', [MessageController::class, 'storePatientThread'])
+    ->name('patients.messages.store');
+
+Route::post('/appointment-requests/{appointmentRequest}/messages', [MessageController::class, 'storeGuestRequestThread'])
+    ->name('appointment-requests.messages.store');
+
+    });
+
 
 /*
 |--------------------------------------------------------------------------
@@ -181,12 +211,14 @@ Route::middleware(['auth', 'role:dentist'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:patient'])->prefix('patient')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('patient.dashboard');
-    })->name('patient.dashboard');
-});
 
+
+Route::middleware(['auth', 'role:patient'])
+    ->prefix('patient')
+    ->name('patient.')
+    ->group(function () {
+        Route::get('/dashboard', [PatientDashboardController::class, 'index'])->name('dashboard');
+    });
 
 
 Route::middleware('internal.redirect')->group(function () {
