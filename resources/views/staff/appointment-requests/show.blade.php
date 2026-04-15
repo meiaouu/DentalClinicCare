@@ -32,73 +32,509 @@
 
     $displayPreferredDentist = $requestItem->preferredDentist?->user?->full_name ?? 'Clinic will assign';
     $hasConvertedAppointment = !empty($requestItem->convertedAppointment);
-    $preferredStartTime = \Illuminate\Support\Str::of($requestItem->preferred_start_time)->substr(0, 5);
+
+    $requestedDate = !empty($requestItem->preferred_date)
+        ? \Carbon\Carbon::parse($requestItem->preferred_date)->toDateString()
+        : '';
+
+    $requestedTime = !empty($requestItem->preferred_start_time)
+        ? \Illuminate\Support\Str::of($requestItem->preferred_start_time)->substr(0, 5)
+        : '';
+
+    $oldConfirmDate = old('appointment_date', $requestedDate);
+    $oldConfirmTime = old('start_time', $requestedTime);
+    $oldConfirmDentistId = old('dentist_id', (string) ($requestItem->preferred_dentist_id ?? ''));
+
+    $oldRescheduleDate = old('preferred_date', $requestedDate);
+    $oldRescheduleTime = old('preferred_start_time', $requestedTime);
+
+    $status = strtolower((string) $requestItem->request_status);
+    $statusStyle = match($status) {
+        'pending' => 'background:#fef3c7;color:#92400e;border:1px solid #fde68a;',
+        'under_review' => 'background:#dbeafe;color:#1d4ed8;border:1px solid #bfdbfe;',
+        'converted_to_appointment' => 'background:#dcfce7;color:#166534;border:1px solid #bbf7d0;',
+        'rejected' => 'background:#fee2e2;color:#991b1b;border:1px solid #fecaca;',
+        default => 'background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;',
+    };
 @endphp
 
 <style>
-    .request-page{padding:32px;max-width:1320px;margin:0 auto;background:#f8fafc}
-    .request-header{margin-bottom:24px}
-    .request-title{font-size:28px;font-weight:800;color:#0f172a;margin:0 0 8px}
-    .request-subtitle{color:#64748b;margin:0;font-size:14px}
-    .alert-box{padding:14px 16px;border-radius:14px;margin-bottom:20px;border:1px solid transparent}
-    .alert-success{background:#ecfdf5;color:#166534;border-color:#bbf7d0}
-    .alert-danger{background:#fef2f2;color:#991b1b;border-color:#fecaca}
-    .request-grid{display:grid;grid-template-columns:2fr 1.15fr;gap:24px;align-items:start}
-    .panel{background:#fff;border:1px solid #e2e8f0;border-radius:18px;padding:22px;box-shadow:0 10px 25px rgba(15,23,42,.04)}
-    .panel+.panel{margin-top:20px}
-    .panel-title{font-size:18px;font-weight:800;color:#0f172a;margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid #eef2f7}
-    .info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-    .info-item{border:1px solid #edf2f7;border-radius:14px;background:#f8fafc;padding:14px}
-    .info-label{font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
-    .info-value{font-size:14px;font-weight:600;color:#0f172a;line-height:1.6;word-break:break-word}
-    .summary-list{display:grid;gap:10px}
-    .summary-row{display:grid;grid-template-columns:180px 1fr;gap:12px;padding:10px 0;border-bottom:1px solid #eef2f7}
-    .summary-row:last-child{border-bottom:none}
-    .summary-key{font-size:13px;font-weight:700;color:#64748b}
-    .summary-value{font-size:14px;font-weight:600;color:#0f172a}
-    .status-badge{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;font-size:12px;font-weight:700;background:#e0f2fe;color:#075985}
-    .answer-list{margin:0;padding-left:18px}
-    .answer-list li{margin-bottom:8px;color:#334155;line-height:1.6}
-    .form-group{margin-bottom:14px}
-    .form-label{display:block;font-size:13px;font-weight:700;color:#334155;margin-bottom:8px}
-    .form-control,.form-select,textarea{width:100%;border:1px solid #cbd5e1;border-radius:12px;padding:12px 14px;font-size:14px;background:#fff;box-sizing:border-box}
-    textarea{min-height:96px;resize:vertical}
-    .btn{width:100%;border:none;border-radius:12px;padding:12px 16px;color:#fff;font-weight:700;cursor:pointer}
-    .btn-success{background:#16a34a}
-    .btn-warning{background:#f59e0b}
-    .btn-danger{background:#dc2626}
-    .btn-secondary{background:#334155}
-    .btn-light{background:#e2e8f0;color:#0f172a}
-    .converted-box{background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;padding:14px 16px;border-radius:14px;margin-bottom:20px;line-height:1.6}
-    .inline-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-    .inline-btn{border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer}
-    .inline-btn-edit{background:#e2e8f0;color:#0f172a}
-    .inline-btn-reset{background:#fef3c7;color:#92400e}
-    .edit-block{display:none;margin-top:12px;padding:14px;border:1px dashed #cbd5e1;border-radius:12px;background:#f8fafc}
-    .edit-block.active{display:block}
-    .calendar-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px}
-    .calendar-month-label{margin:0;font-size:16px;font-weight:800;color:#0f172a}
-    .calendar-btn{width:38px;height:38px;border-radius:10px;border:1px solid #d7e0e8;background:#fff;color:#334155;font-weight:800}
-    .calendar-weekdays{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-bottom:10px;text-align:center;font-size:12px;font-weight:800;color:#64748b}
-    #staffCalendarGrid{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
-    #staffCalendarGrid button{min-height:42px;border-radius:10px;font-weight:700}
-    .slot-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-    .time-slot-btn{border:1px solid #dbe4ea;background:#fff;border-radius:12px;min-height:44px;padding:10px;font-weight:700;text-align:center;color:#334155;cursor:pointer;transition:.2s ease}
-    .time-slot-btn:hover:not(.disabled){border-color:#0f9d8a;color:#0f9d8a}
-    .time-slot-btn.active{background:#0f9d8a;border-color:#0f9d8a;color:#fff}
-    .time-slot-btn.disabled{background:#f8fafc;color:#94a3b8;border-color:#e2e8f0;cursor:not-allowed}
-    .helper-text{font-size:13px;color:#64748b;line-height:1.6}
-    @media (max-width:991px){
-        .request-grid{grid-template-columns:1fr}
-        .info-grid{grid-template-columns:1fr}
-        .summary-row{grid-template-columns:1fr}
+    .request-page {
+        padding: 32px;
+        max-width: 1240px;
+        margin: 0 auto;
+        background: #f8fafc;
+    }
+
+    .request-header {
+        margin-bottom: 24px;
+    }
+
+    .request-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 6px;
+    }
+
+    .request-subtitle {
+        color: #64748b;
+        margin: 0;
+        font-size: 14px;
+    }
+
+    .alert-box {
+        padding: 14px 16px;
+        border-radius: 14px;
+        margin-bottom: 20px;
+        border: 1px solid transparent;
+    }
+
+    .alert-success {
+        background: #ecfdf5;
+        color: #166534;
+        border-color: #bbf7d0;
+    }
+
+    .alert-danger {
+        background: #fef2f2;
+        color: #991b1b;
+        border-color: #fecaca;
+    }
+
+    .converted-box {
+        background: #eff6ff;
+        border: 1px solid #bfdbfe;
+        color: #1d4ed8;
+        padding: 14px 16px;
+        border-radius: 14px;
+        margin-bottom: 20px;
+        line-height: 1.6;
+    }
+
+    .request-grid {
+        display: grid;
+        grid-template-columns: 1.65fr 1fr;
+        gap: 22px;
+        align-items: start;
+    }
+
+    .panel {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    }
+
+    .panel + .panel {
+        margin-top: 18px;
+    }
+
+    .panel-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0 0 14px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .panel-subtitle {
+        margin: -4px 0 14px;
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.6;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .info-item {
+        border: 1px solid #edf2f7;
+        border-radius: 12px;
+        background: #f8fafc;
+        padding: 13px;
+    }
+
+    .info-label {
+        font-size: 11px;
+        font-weight: 700;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 6px;
+    }
+
+    .info-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+        line-height: 1.6;
+        word-break: break-word;
+    }
+
+    .summary-list {
+        display: grid;
+        gap: 8px;
+    }
+
+    .summary-row {
+        display: grid;
+        grid-template-columns: 170px 1fr;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #eef2f7;
+    }
+
+    .summary-row:last-child {
+        border-bottom: none;
+    }
+
+    .summary-key {
+        font-size: 13px;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    .summary-value {
+        font-size: 14px;
+        font-weight: 600;
+        color: #0f172a;
+        line-height: 1.6;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 12px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+    }
+
+    .answer-list {
+        margin: 0;
+        padding-left: 18px;
+    }
+
+    .answer-list li {
+        margin-bottom: 8px;
+        color: #334155;
+        line-height: 1.6;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        color: #334155;
+        margin-bottom: 8px;
+    }
+
+    .form-control,
+    .form-select,
+    textarea {
+        width: 100%;
+        border: 1px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 12px 14px;
+        font-size: 14px;
+        background: #ffffff;
+        box-sizing: border-box;
+        outline: none;
+    }
+
+    .form-control:focus,
+    .form-select:focus,
+    textarea:focus {
+        border-color: #0f9d8a;
+        box-shadow: 0 0 0 3px rgba(15, 157, 138, 0.10);
+    }
+
+    textarea {
+        min-height: 96px;
+        resize: vertical;
+    }
+
+    .btn {
+        width: 100%;
+        border: none;
+        border-radius: 12px;
+        padding: 12px 16px;
+        color: #fff;
+        font-weight: 700;
+        cursor: pointer;
+        font-size: 14px;
+    }
+
+    .btn-success { background: #16a34a; }
+    .btn-warning { background: #f59e0b; }
+    .btn-danger { background: #dc2626; }
+
+    .helper-text {
+        font-size: 13px;
+        color: #64748b;
+        line-height: 1.6;
+    }
+
+    .inline-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin: 12px 0 14px;
+    }
+
+    .inline-btn {
+        border: none;
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .inline-btn-edit {
+        background: #e2e8f0;
+        color: #0f172a;
+    }
+
+    .inline-btn-reset {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    .edit-block {
+        display: none;
+        margin-top: 12px;
+        padding: 14px;
+        border: 1px dashed #cbd5e1;
+        border-radius: 12px;
+        background: #f8fafc;
+    }
+
+    .edit-block.active {
+        display: block;
+    }
+
+    .dentist-highlight {
+        border: 2px solid #0f9d8a;
+        background: linear-gradient(180deg, #ecfdf5 0%, #f8fffb 100%);
+        border-radius: 14px;
+        padding: 14px;
+        margin-bottom: 14px;
+    }
+
+    .dentist-highlight-label {
+        font-size: 12px;
+        font-weight: 800;
+        color: #0f766e;
+        text-transform: uppercase;
+        margin-bottom: 6px;
+        letter-spacing: .04em;
+    }
+
+    .dentist-highlight-value {
+        font-size: 15px;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .availability-tags {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+
+    .availability-tag {
+        display: inline-flex;
+        align-items: center;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 11px;
+        font-weight: 700;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #334155;
+    }
+
+    .availability-tag.primary {
+        background: #ecfdf5;
+        color: #0f766e;
+        border-color: #a7f3d0;
+    }
+
+    .availability-tag.muted {
+        background: #f8fafc;
+        color: #64748b;
+        border-color: #e2e8f0;
+    }
+
+    .week-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+    }
+
+    .week-label {
+        font-size: 15px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .week-nav {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        border: 1px solid #d7e0e8;
+        background: #fff;
+        color: #334155;
+        font-weight: 800;
+        cursor: pointer;
+    }
+
+    .week-strip-wrap {
+        overflow-x: auto;
+        padding-bottom: 4px;
+    }
+
+    .week-strip {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(86px, 1fr));
+        gap: 10px;
+        min-width: 670px;
+    }
+
+    .week-day-card {
+        border: 1px solid #dbe4ea;
+        background: #ffffff;
+        border-radius: 14px;
+        padding: 12px 10px;
+        text-align: center;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .week-day-card:hover:not(.disabled) {
+        border-color: #0f9d8a;
+        background: #f0fdfa;
+    }
+
+    .week-day-card.active {
+        border-color: #0f9d8a;
+        background: #ecfdf5;
+        box-shadow: inset 0 0 0 1px #0f9d8a;
+    }
+
+    .week-day-card.disabled {
+        background: #f1f5f9;
+        border-color: #e2e8f0;
+        color: #94a3b8;
+        cursor: not-allowed;
+        opacity: .8;
+    }
+
+    .week-day-name {
+        font-size: 11px;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 5px;
+    }
+
+    .week-day-card.active .week-day-name {
+        color: #0f766e;
+    }
+
+    .week-day-number {
+        font-size: 20px;
+        font-weight: 800;
+        color: #0f172a;
+        line-height: 1;
+    }
+
+    .week-day-card.disabled .week-day-number {
+        color: #94a3b8;
+    }
+
+    .week-day-sub {
+        margin-top: 6px;
+        font-size: 11px;
+        color: #64748b;
+    }
+
+    .slot-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .time-slot-btn {
+        border: 1px solid #dbe4ea;
+        background: #fff;
+        border-radius: 12px;
+        min-height: 44px;
+        padding: 10px;
+        font-weight: 700;
+        text-align: center;
+        color: #334155;
+        cursor: pointer;
+        transition: .2s ease;
+    }
+
+    .time-slot-btn:hover:not(.disabled) {
+        border-color: #0f9d8a;
+        color: #0f9d8a;
+    }
+
+    .time-slot-btn.active {
+        background: #0f9d8a;
+        border-color: #0f9d8a;
+        color: #fff;
+    }
+
+    .time-slot-btn.disabled {
+        background: #f1f5f9;
+        color: #94a3b8;
+        border-color: #e2e8f0;
+        cursor: not-allowed;
+    }
+
+    @media (max-width: 991px) {
+        .request-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .info-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .summary-row {
+            grid-template-columns: 1fr;
+        }
+
+        .slot-grid {
+            grid-template-columns: 1fr;
+        }
     }
 </style>
 
 <div class="request-page">
     <div class="request-header">
         <h1 class="request-title">Review Appointment Request</h1>
-        <p class="request-subtitle">Check request details, validate the schedule, then confirm, reschedule, or reject.</p>
+        <p class="request-subtitle">Review request details and assign the final dentist, date, and time.</p>
     </div>
 
     @if(session('success'))
@@ -128,22 +564,67 @@
         <div>
             <div class="panel">
                 <h2 class="panel-title">Request Overview</h2>
+
                 <div class="summary-list">
-                    <div class="summary-row"><div class="summary-key">Request Code</div><div class="summary-value">{{ $requestItem->request_code }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Status</div><div class="summary-value"><span class="status-badge">{{ ucfirst(str_replace('_', ' ', $requestItem->request_status)) }}</span></div></div>
-                    <div class="summary-row"><div class="summary-key">Patient</div><div class="summary-value">{{ $displayPatientName ?: '—' }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Contact Number</div><div class="summary-value">{{ $displayContact }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Email</div><div class="summary-value">{{ $displayEmail }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Service</div><div class="summary-value">{{ $requestItem->service?->service_name ?? '—' }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Requested Date</div><div class="summary-value">{{ $requestItem->preferred_date ?? '—' }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Requested Time</div><div class="summary-value">{{ $requestItem->preferred_start_time ?? '—' }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Preferred Dentist</div><div class="summary-value">{{ $displayPreferredDentist }}</div></div>
-                    <div class="summary-row"><div class="summary-key">Patient Concerns</div><div class="summary-value">{{ $notesOrConcerns ?: '—' }}</div></div>
+                    <div class="summary-row">
+                        <div class="summary-key">Request Code</div>
+                        <div class="summary-value">{{ $requestItem->request_code }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Status</div>
+                        <div class="summary-value">
+                            <span class="status-badge" style="@php echo $statusStyle; @endphp">
+                                {{ ucfirst(str_replace('_', ' ', $requestItem->request_status)) }}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Patient</div>
+                        <div class="summary-value">{{ $displayPatientName ?: '—' }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Contact Number</div>
+                        <div class="summary-value">{{ $displayContact }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Email</div>
+                        <div class="summary-value">{{ $displayEmail }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Service</div>
+                        <div class="summary-value">{{ $requestItem->service?->service_name ?? '—' }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Requested Date</div>
+                        <div class="summary-value">{{ $requestedDate ?: '—' }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Requested Time</div>
+                        <div class="summary-value">{{ $requestedTime ?: '—' }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Preferred Dentist</div>
+                        <div class="summary-value">{{ $displayPreferredDentist }}</div>
+                    </div>
+
+                    <div class="summary-row">
+                        <div class="summary-key">Patient Concerns</div>
+                        <div class="summary-value">{{ $notesOrConcerns ?: '—' }}</div>
+                    </div>
                 </div>
             </div>
 
             <div class="panel">
                 <h2 class="panel-title">Patient Information</h2>
+
                 <div class="info-grid">
                     <div class="info-item"><div class="info-label">First Name</div><div class="info-value">{{ $patientInfo['first_name'] ?? $requestItem->guest_first_name ?? '—' }}</div></div>
                     <div class="info-item"><div class="info-label">Middle Name</div><div class="info-value">{{ $patientInfo['middle_name'] ?? $requestItem->guest_middle_name ?? '—' }}</div></div>
@@ -154,6 +635,7 @@
                     <div class="info-item"><div class="info-label">Occupation</div><div class="info-value">{{ $patientInfo['occupation'] ?? '—' }}</div></div>
                     <div class="info-item"><div class="info-label">Emergency Contact</div><div class="info-value">{{ $patientInfo['emergency_contact_name'] ?? '—' }}</div></div>
                     <div class="info-item"><div class="info-label">Emergency Number</div><div class="info-value">{{ $patientInfo['emergency_contact_number'] ?? '—' }}</div></div>
+
                     <div class="info-item">
                         <div class="info-label">Address</div>
                         <div class="info-value">
@@ -194,74 +676,73 @@
             @if(!$hasConvertedAppointment)
                 <div class="panel">
                     <h2 class="panel-title">Confirm Appointment</h2>
-                    <p class="helper-text">
-                        Approve the request as-is, or use the edit buttons to adjust dentist, date, or time before confirmation.
-                    </p>
+                    <p class="panel-subtitle">Select the dentist first, then pick a date. Time slots load automatically when a date is clicked.</p>
+
+                    <div class="dentist-highlight">
+                        <div class="dentist-highlight-label">Assigned Dentist</div>
+                        <div class="dentist-highlight-value" id="approvedDentistLabel">{{ $displayPreferredDentist }}</div>
+
+                        <div class="availability-tags">
+                            <span class="availability-tag primary" id="availabilityDentistTag">Dentist selection required</span>
+                            <span class="availability-tag muted" id="availabilityModeTag">Availability tag pending</span>
+                        </div>
+                    </div>
 
                     <form method="POST" action="{{ route('staff.appointment-requests.confirm', $requestItem->request_id) }}" id="confirmAppointmentForm">
                         @csrf
 
-                        <input type="hidden" name="dentist_id" id="confirm_dentist_id" value="{{ old('dentist_id', $requestItem->preferred_dentist_id) }}">
-                        <input type="hidden" name="appointment_date" id="confirm_appointment_date" value="{{ old('appointment_date', $requestItem->preferred_date) }}">
-                        <input type="hidden" name="start_time" id="confirm_start_time" value="{{ old('start_time', $preferredStartTime) }}">
+                        <input type="hidden" name="dentist_id" id="confirm_dentist_id" value="{{ $oldConfirmDentistId }}">
+                        <input type="hidden" name="appointment_date" id="confirm_appointment_date" value="{{ $oldConfirmDate }}">
+                        <input type="hidden" name="start_time" id="confirm_start_time" value="{{ $oldConfirmTime }}">
 
-                        <div class="summary-list" style="margin-bottom:14px;">
-                            <div class="summary-row">
-                                <div class="summary-key">Approved Dentist</div>
-                                <div class="summary-value" id="approvedDentistLabel">{{ $displayPreferredDentist }}</div>
-                            </div>
+                        <div class="form-group">
+                            <label class="form-label">Select Dentist</label>
+                            <select id="confirmDentistSelect" class="form-select">
+                                <option value="">Select dentist</option>
+                                @foreach($dentists as $dentist)
+                                    <option
+                                        value="{{ $dentist->dentist_id }}"
+                                        data-label="{{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}"
+                                        @selected((string) $oldConfirmDentistId === (string) $dentist->dentist_id)
+                                    >
+                                        {{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div class="summary-list" style="margin:14px 0;">
                             <div class="summary-row">
                                 <div class="summary-key">Approved Date</div>
-                                <div class="summary-value" id="approvedDateLabel">{{ old('appointment_date', $requestItem->preferred_date) ?: '—' }}</div>
+                                <div class="summary-value" id="approvedDateLabel">{{ $oldConfirmDate ?: '—' }}</div>
                             </div>
                             <div class="summary-row">
                                 <div class="summary-key">Approved Time</div>
-                                <div class="summary-value" id="approvedTimeLabel">{{ old('start_time', $preferredStartTime) ?: '—' }}</div>
+                                <div class="summary-value" id="approvedTimeLabel">{{ $oldConfirmTime ?: '—' }}</div>
                             </div>
                         </div>
 
                         <div class="inline-actions">
-                            <button type="button" class="inline-btn inline-btn-edit" data-edit-target="dentistEditBlock">Edit Dentist</button>
-                            <button type="button" class="inline-btn inline-btn-edit" data-edit-target="dateEditBlock">Edit Date</button>
-                            <button type="button" class="inline-btn inline-btn-edit" data-edit-target="timeEditBlock">Edit Time</button>
-                            <button type="button" class="inline-btn inline-btn-reset" id="resetConfirmValuesBtn">Reset to Requested</button>
+                            <button type="button" class="inline-btn inline-btn-edit" data-edit-target="dateEditBlock">Edit Date & Time</button>
+                            <button type="button" class="inline-btn inline-btn-reset" id="resetConfirmValuesBtn">Reset</button>
                         </div>
 
-                        <div class="edit-block" id="dentistEditBlock">
-                            <div class="form-group" style="margin-bottom:0;">
-                                <label class="form-label">Assign Dentist</label>
-                                <select id="confirmDentistSelect" class="form-select">
-                                    <option value="">Select dentist</option>
-                                    @foreach($dentists as $dentist)
-                                        <option
-                                            value="{{ $dentist->dentist_id }}"
-                                            data-label="{{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}"
-                                            @selected((string) old('dentist_id', $requestItem->preferred_dentist_id) === (string) $dentist->dentist_id)
-                                        >
-                                            {{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}
-                                        </option>
-                                    @endforeach
-                                </select>
+                        <div class="edit-block active" id="dateEditBlock">
+                            <div class="week-toolbar">
+                                <button type="button" class="week-nav" id="prevWeekBtn">&lt;</button>
+                                <h6 id="weekRangeLabel" class="week-label">Select Week</h6>
+                                <button type="button" class="week-nav" id="nextWeekBtn">&gt;</button>
                             </div>
-                        </div>
 
-                        <div class="edit-block" id="dateEditBlock">
-                            <div class="calendar-toolbar">
-                                <button type="button" class="calendar-btn" id="prevMonthBtn">&lt;</button>
-                                <h6 id="calendarMonthLabel" class="calendar-month-label">Select Date</h6>
-                                <button type="button" class="calendar-btn" id="nextMonthBtn">&gt;</button>
+                            <div class="week-strip-wrap">
+                                <div id="staffWeekStrip" class="week-strip"></div>
                             </div>
-                            <div class="calendar-weekdays">
-                                <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
-                            </div>
-                            <div id="staffCalendarGrid"></div>
+
                             <div class="helper-text" style="margin-top:12px;">
-                                Selected date: <strong id="calendarSelectedDateText">{{ old('appointment_date', $requestItem->preferred_date) ?: 'None' }}</strong>
+                                Selected date: <strong id="calendarSelectedDateText">{{ $oldConfirmDate ?: 'None' }}</strong>
                             </div>
-                        </div>
 
-                        <div class="edit-block" id="timeEditBlock">
-                            <div class="form-group">
+                            <div style="margin-top:14px;">
                                 <label class="form-label">Available Time Slots</label>
                                 <div id="confirmTimeSlotGrid" class="slot-grid"></div>
                                 <div id="confirmSlotFeedback" class="helper-text" style="margin-top:10px;">
@@ -270,7 +751,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group">
+                        <div class="form-group" style="margin-top:14px;">
                             <label class="form-label">Staff Remarks</label>
                             <textarea name="remarks">{{ old('remarks') }}</textarea>
                         </div>
@@ -292,7 +773,7 @@
                                 @foreach($dentists as $dentist)
                                     <option
                                         value="{{ $dentist->dentist_id }}"
-                                        @selected((string) old('dentist_id', $requestItem->preferred_dentist_id) === (string) $dentist->dentist_id)
+                                        @selected((string) old('dentist_id', $oldConfirmDentistId) === (string) $dentist->dentist_id)
                                     >
                                         {{ $dentist->user?->full_name ?? ('Dentist #' . $dentist->dentist_id) }}
                                     </option>
@@ -302,12 +783,12 @@
 
                         <div class="form-group">
                             <label class="form-label">New Appointment Date</label>
-                            <input type="date" name="appointment_date" class="form-control" value="{{ old('appointment_date', $requestItem->preferred_date) }}" required>
+                            <input type="date" name="preferred_date" class="form-control" value="{{ $oldRescheduleDate }}" required>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">New Start Time</label>
-                            <input type="time" name="start_time" class="form-control" value="{{ old('start_time', $preferredStartTime) }}" required>
+                            <input type="time" name="preferred_start_time" class="form-control" value="{{ $oldRescheduleTime }}" required>
                         </div>
 
                         <div class="form-group">
@@ -330,6 +811,7 @@
                         </div>
                         <button type="submit" class="btn btn-danger">Reject Request</button>
                     </form>
+
                 </div>
             @else
                 <div class="panel">
@@ -349,10 +831,8 @@
         $requestDefaults = [
             'dentistId' => (string) ($requestItem->preferred_dentist_id ?? ''),
             'dentistLabel' => $displayPreferredDentist,
-            'date' => !empty($requestItem->preferred_date)
-                ? \Carbon\Carbon::parse($requestItem->preferred_date)->toDateString()
-                : '',
-            'time' => (string) $preferredStartTime,
+            'date' => $requestedDate,
+            'time' => (string) $requestedTime,
             'serviceId' => (int) ($requestItem->service_id ?? 0),
         ];
     @endphp
@@ -362,12 +842,11 @@
         data-request-defaults='@json($requestDefaults)'
         hidden
     ></div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const requestDefaultsEl = document.getElementById('requestDefaultsData');
-const requestDefaults = JSON.parse(
-    requestDefaultsEl?.dataset.requestDefaults || '{}'
-);
+    const requestDefaults = JSON.parse(requestDefaultsEl?.dataset.requestDefaults || '{}');
 
     const confirmDentistId = document.getElementById('confirm_dentist_id');
     const confirmAppointmentDate = document.getElementById('confirm_appointment_date');
@@ -377,15 +856,18 @@ const requestDefaults = JSON.parse(
     const approvedDateLabel = document.getElementById('approvedDateLabel');
     const approvedTimeLabel = document.getElementById('approvedTimeLabel');
 
+    const availabilityDentistTag = document.getElementById('availabilityDentistTag');
+    const availabilityModeTag = document.getElementById('availabilityModeTag');
+
     const confirmDentistSelect = document.getElementById('confirmDentistSelect');
     const confirmTimeSlotGrid = document.getElementById('confirmTimeSlotGrid');
     const confirmSlotFeedback = document.getElementById('confirmSlotFeedback');
 
-    const calendarGrid = document.getElementById('staffCalendarGrid');
-    const calendarMonthLabel = document.getElementById('calendarMonthLabel');
+    const staffWeekStrip = document.getElementById('staffWeekStrip');
+    const weekRangeLabel = document.getElementById('weekRangeLabel');
     const calendarSelectedDateText = document.getElementById('calendarSelectedDateText');
-    const prevMonthBtn = document.getElementById('prevMonthBtn');
-    const nextMonthBtn = document.getElementById('nextMonthBtn');
+    const prevWeekBtn = document.getElementById('prevWeekBtn');
+    const nextWeekBtn = document.getElementById('nextWeekBtn');
 
     const toggleButtons = document.querySelectorAll('[data-edit-target]');
     const resetConfirmValuesBtn = document.getElementById('resetConfirmValuesBtn');
@@ -393,8 +875,21 @@ const requestDefaults = JSON.parse(
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    let currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    let selectedDate = confirmAppointmentDate.value ? new Date(confirmAppointmentDate.value + 'T00:00:00') : null;
+    const now = new Date();
+
+    let selectedDate = confirmAppointmentDate.value
+        ? new Date(confirmAppointmentDate.value + 'T00:00:00')
+        : null;
+
+    function startOfWeek(date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        d.setDate(d.getDate() - day);
+        d.setHours(0, 0, 0, 0);
+        return d;
+    }
+
+    let currentWeekStart = startOfWeek(selectedDate || today);
 
     function normalizeTime(value) {
         if (!value) return '';
@@ -406,6 +901,24 @@ const requestDefaults = JSON.parse(
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+    }
+
+    function formatDayShort(date) {
+        return date.toLocaleDateString('en-US', { weekday: 'short' });
+    }
+
+    function formatMonthShort(date) {
+        return date.toLocaleDateString('en-US', { month: 'short' });
+    }
+
+    function formatWeekRange(startDate) {
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 6);
+
+        const startText = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        const endText = endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+        return `${startText} - ${endText}`;
     }
 
     function formatHourLabel(time24) {
@@ -423,8 +936,12 @@ const requestDefaults = JSON.parse(
         if (confirmDentistSelect && confirmDentistSelect.value) {
             const option = confirmDentistSelect.options[confirmDentistSelect.selectedIndex];
             approvedDentistLabel.textContent = option?.dataset.label || option?.textContent || '—';
+            availabilityDentistTag.textContent = 'Dentist selected';
+            availabilityDentistTag.className = 'availability-tag primary';
         } else {
             approvedDentistLabel.textContent = requestDefaults.dentistLabel || 'Clinic will assign';
+            availabilityDentistTag.textContent = 'Select dentist first';
+            availabilityDentistTag.className = 'availability-tag muted';
         }
 
         calendarSelectedDateText.textContent = confirmAppointmentDate.value || 'None';
@@ -445,6 +962,7 @@ const requestDefaults = JSON.parse(
     if (confirmDentistSelect) {
         confirmDentistSelect.addEventListener('change', function () {
             confirmDentistId.value = this.value;
+            confirmStartTime.value = '';
             updateSummaryLabels();
             loadAvailableSlots();
         });
@@ -460,23 +978,82 @@ const requestDefaults = JSON.parse(
         }
 
         selectedDate = requestDefaults.date ? new Date(requestDefaults.date + 'T00:00:00') : null;
-        renderCalendar();
+        currentWeekStart = startOfWeek(selectedDate || today);
+
+        renderWeekStrip();
         updateSummaryLabels();
         loadAvailableSlots();
     });
+
+    function renderWeekStrip() {
+        staffWeekStrip.innerHTML = '';
+        weekRangeLabel.textContent = formatWeekRange(currentWeekStart);
+
+        for (let i = 0; i < 7; i++) {
+            const dayDate = new Date(currentWeekStart);
+            dayDate.setDate(currentWeekStart.getDate() + i);
+            dayDate.setHours(0, 0, 0, 0);
+
+            const dateStr = formatDateLocal(dayDate);
+            const isPast = dayDate < today;
+            const isSelected = selectedDate && formatDateLocal(selectedDate) === dateStr;
+
+            const card = document.createElement('button');
+            card.type = 'button';
+            card.className = 'week-day-card';
+            if (isPast) {
+                card.classList.add('disabled');
+                card.disabled = true;
+            }
+            if (isSelected) {
+                card.classList.add('active');
+            }
+
+            card.innerHTML = `
+                <div class="week-day-name">${formatDayShort(dayDate)}</div>
+                <div class="week-day-number">${dayDate.getDate()}</div>
+                <div class="week-day-sub">${formatMonthShort(dayDate)}</div>
+            `;
+
+            if (!isPast) {
+                card.addEventListener('click', function () {
+                    selectedDate = dayDate;
+                    confirmAppointmentDate.value = dateStr;
+                    confirmStartTime.value = '';
+                    updateSummaryLabels();
+                    renderWeekStrip();
+                    loadAvailableSlots();
+                });
+            }
+
+            staffWeekStrip.appendChild(card);
+        }
+    }
+
+    function isSameLocalDate(a, b) {
+        return a.getFullYear() === b.getFullYear()
+            && a.getMonth() === b.getMonth()
+            && a.getDate() === b.getDate();
+    }
 
     async function loadAvailableSlots() {
         confirmTimeSlotGrid.innerHTML = '';
 
         if (!requestDefaults.serviceId || !confirmAppointmentDate.value) {
-            confirmSlotFeedback.textContent = 'Select a date to load available time slots.';
+            confirmSlotFeedback.textContent = 'Select a dentist and date to load available time slots.';
+            availabilityModeTag.textContent = 'Availability tag pending';
+            availabilityModeTag.className = 'availability-tag muted';
             return;
         }
 
-        let url = `{{ route('booking.available.slots') }}?service_id=${encodeURIComponent(requestDefaults.serviceId)}&date=${encodeURIComponent(confirmAppointmentDate.value)}`;
-        if (confirmDentistId.value) {
-            url += `&dentist_id=${encodeURIComponent(confirmDentistId.value)}`;
+        if (!confirmDentistId.value) {
+            confirmSlotFeedback.textContent = 'Select a dentist first before choosing a time.';
+            availabilityModeTag.textContent = 'Dentist not selected';
+            availabilityModeTag.className = 'availability-tag muted';
+            return;
         }
+
+        let url = `{{ route('booking.available.slots') }}?service_id=${encodeURIComponent(requestDefaults.serviceId)}&date=${encodeURIComponent(confirmAppointmentDate.value)}&dentist_id=${encodeURIComponent(confirmDentistId.value)}`;
 
         try {
             confirmSlotFeedback.textContent = 'Loading available time slots...';
@@ -496,6 +1073,15 @@ const requestDefaults = JSON.parse(
             const slots = Array.isArray(result.available_slots) ? result.available_slots : [];
             const clinicHours = Array.isArray(result.clinic_hours) ? result.clinic_hours : [];
 
+            const availabilityTag = result.availability_tag || '';
+            if (availabilityTag) {
+                availabilityModeTag.textContent = availabilityTag;
+                availabilityModeTag.className = 'availability-tag primary';
+            } else {
+                availabilityModeTag.textContent = slots.length > 0 ? 'Dentist available' : 'No available slots';
+                availabilityModeTag.className = slots.length > 0 ? 'availability-tag primary' : 'availability-tag muted';
+            }
+
             if (clinicHours.length === 0) {
                 confirmSlotFeedback.textContent = 'No clinic hours configured for this date.';
                 return;
@@ -506,6 +1092,9 @@ const requestDefaults = JSON.parse(
                 availableMap[normalizeTime(slot.start_time)] = slot;
             });
 
+            const selectedDateObj = new Date(confirmAppointmentDate.value + 'T00:00:00');
+            const isTodaySelected = isSameLocalDate(selectedDateObj, now);
+
             clinicHours.forEach((hour) => {
                 const normalizedHour = normalizeTime(hour);
                 const btn = document.createElement('button');
@@ -513,7 +1102,13 @@ const requestDefaults = JSON.parse(
                 btn.className = 'time-slot-btn';
                 btn.textContent = formatHourLabel(normalizedHour);
 
-                if (availableMap[normalizedHour]) {
+                const [hh, mm, ss] = normalizedHour.split(':').map(Number);
+                const slotDateTime = new Date(selectedDateObj);
+                slotDateTime.setHours(hh, mm, ss || 0, 0);
+
+                const isPastSlot = isTodaySelected && slotDateTime <= now;
+
+                if (availableMap[normalizedHour] && !isPastSlot) {
                     btn.dataset.value = normalizedHour;
 
                     if ((confirmStartTime.value + ':00') === normalizedHour || confirmStartTime.value === normalizedHour) {
@@ -539,80 +1134,39 @@ const requestDefaults = JSON.parse(
                 : 'No available slots for the selected date.';
         } catch (error) {
             confirmSlotFeedback.textContent = 'Failed to load available slots.';
+            availabilityModeTag.textContent = 'Availability lookup failed';
+            availabilityModeTag.className = 'availability-tag muted';
             console.error(error);
         }
     }
 
-    function renderCalendar() {
-        calendarGrid.innerHTML = '';
+    prevWeekBtn.addEventListener('click', function () {
+        const newWeek = new Date(currentWeekStart);
+        newWeek.setDate(newWeek.getDate() - 7);
 
-        const year = currentMonth.getFullYear();
-        const month = currentMonth.getMonth();
-
-        calendarMonthLabel.textContent = currentMonth.toLocaleDateString('en-US', {
-            month: 'long',
-            year: 'numeric'
-        });
-
-        const firstDay = new Date(year, month, 1);
-        const lastDay = new Date(year, month + 1, 0);
-        const startWeekday = firstDay.getDay();
-        const totalDays = lastDay.getDate();
-
-        for (let i = 0; i < startWeekday; i++) {
-            const blank = document.createElement('div');
-            calendarGrid.appendChild(blank);
+        if (newWeek < startOfWeek(today)) {
+            currentWeekStart = startOfWeek(today);
+        } else {
+            currentWeekStart = newWeek;
         }
 
-        for (let day = 1; day <= totalDays; day++) {
-            const cellDate = new Date(year, month, day);
-            cellDate.setHours(0, 0, 0, 0);
-
-            const btn = document.createElement('button');
-            btn.type = 'button';
-            btn.className = 'btn-light';
-            btn.textContent = day;
-
-            const isPast = cellDate < today;
-            const isSelected = selectedDate && formatDateLocal(cellDate) === formatDateLocal(selectedDate);
-
-            if (isPast) {
-                btn.disabled = true;
-                btn.style.opacity = '0.5';
-            } else if (isSelected) {
-                btn.className = 'btn btn-secondary';
-            } else {
-                btn.className = 'btn-light';
-            }
-
-            btn.addEventListener('click', function () {
-                selectedDate = cellDate;
-                const formatted = formatDateLocal(cellDate);
-
-                confirmAppointmentDate.value = formatted;
-                updateSummaryLabels();
-                renderCalendar();
-                loadAvailableSlots();
-            });
-
-            calendarGrid.appendChild(btn);
-        }
-    }
-
-    prevMonthBtn.addEventListener('click', function () {
-        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-        renderCalendar();
+        renderWeekStrip();
     });
 
-    nextMonthBtn.addEventListener('click', function () {
-        currentMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-        renderCalendar();
+    nextWeekBtn.addEventListener('click', function () {
+        const newWeek = new Date(currentWeekStart);
+        newWeek.setDate(newWeek.getDate() + 7);
+        currentWeekStart = newWeek;
+        renderWeekStrip();
     });
 
     updateSummaryLabels();
-    renderCalendar();
-    if (confirmAppointmentDate.value) {
+    renderWeekStrip();
+
+    if (confirmAppointmentDate.value && confirmDentistId.value) {
         loadAvailableSlots();
+    } else {
+        confirmSlotFeedback.textContent = 'Select a dentist and date to load available time slots.';
     }
 });
 </script>

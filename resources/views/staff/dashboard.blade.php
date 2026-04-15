@@ -2,13 +2,16 @@
 
 @section('content')
 <style>
-    .staff-dashboard {
-        display: flex;
-        flex-direction: column;
-        gap: 22px;
+    .dashboard-page {
+        display: grid;
+        gap: 20px;
     }
 
-    .staff-ui-topbar {
+    .welcome-panel {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 22px 24px;
         display: flex;
         justify-content: space-between;
         align-items: center;
@@ -16,328 +19,415 @@
         flex-wrap: wrap;
     }
 
-    .staff-ui-title-wrap h1 {
-        margin: 0;
+    .welcome-label {
+        font-size: 13px;
+        font-weight: 700;
+        color: #0f766e;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+        margin-bottom: 6px;
+        animation: fadeSlideIn 0.7s ease;
+    }
+
+    .welcome-title {
+        margin: 0 0 6px;
         font-size: 30px;
         font-weight: 800;
-        color: #0f172a;
+        color: #111827;
+        animation: fadeSlideIn 0.9s ease;
     }
 
-    .staff-ui-title-wrap p {
-        margin: 6px 0 0;
-        color: #64748b;
+    .welcome-subtitle {
+        margin: 0;
         font-size: 14px;
-        line-height: 1.6;
+        color: #6b7280;
+        animation: fadeSlideIn 1s ease;
     }
 
-    .staff-ui-tools {
+    .welcome-actions {
         display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .welcome-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 14px;
+        border-radius: 8px;
+        text-decoration: none;
+        font-size: 13px;
+        font-weight: 700;
+        border: 1px solid #d1d5db;
+        background: #ffffff;
+        color: #374151;
+    }
+
+    .welcome-btn.primary {
+        background: #0f9d8a;
+        border-color: #0f9d8a;
+        color: #ffffff;
+    }
+
+    .summary-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 16px;
+    }
+
+    .summary-card {
+        position: relative;
+        overflow: hidden;
+        border-radius: 14px;
+        padding: 18px 20px;
+        min-height: 115px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        color: #ffffff;
+        box-shadow: 0 6px 14px rgba(0, 0, 0, 0.08);
+    }
+
+    .summary-card * {
+        position: relative;
+        z-index: 2;
+    }
+
+    .summary-card::before,
+    .summary-card::after {
+        content: "";
+        position: absolute;
+        border-radius: 50%;
+        z-index: 1;
+    }
+
+    .summary-card::before {
+        width: 140px;
+        height: 140px;
+        top: -50px;
+        right: -40px;
+        background: rgba(255, 255, 255, 0.08);
+    }
+
+    .summary-card::after {
+        width: 90px;
+        height: 90px;
+        bottom: -35px;
+        right: 10px;
+        background: rgba(0, 0, 0, 0.18);
+    }
+
+    .summary-card.one {
+        background: linear-gradient(135deg, #111827, #1f2937);
+    }
+
+    .summary-card.two {
+        background: linear-gradient(135deg, #374151, #4b5563);
+    }
+
+    .summary-card.three {
+        background: linear-gradient(135deg, #0f9d8a, #06b6d4);
+    }
+
+    .summary-number {
+        font-size: 30px;
+        font-weight: 800;
+        margin-bottom: 8px;
+        line-height: 1;
+        color: #ffffff;
+    }
+
+    .summary-title {
+        font-size: 14px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        color: #ffffff;
+    }
+
+    .summary-text {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.88);
+        line-height: 1.5;
+    }
+
+    .top-tabs {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 2px;
+    }
+
+    .top-tab {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 10px 10px 0 0;
+        border: 1px solid #e5e7eb;
+        border-bottom: none;
+        background: #f9fafb;
+        color: #4b5563;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .top-tab.active {
+        background: #ffffff;
+        color: #111827;
+        box-shadow: inset 0 -2px 0 #0f9d8a;
+    }
+
+    .section-box {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .section-header {
+        padding: 18px 20px 14px;
+        border-bottom: 1px solid #eef2f7;
+        display: flex;
+        justify-content: space-between;
         align-items: center;
         gap: 12px;
         flex-wrap: wrap;
     }
 
-    .staff-ui-search {
-        min-width: 250px;
-        height: 44px;
-        padding: 0 16px;
-        border: 1px solid #dbe2ea;
-        border-radius: 999px;
-        background: #ffffff;
-        color: #334155;
-        outline: none;
+    .section-header h2 {
+        margin: 0 0 4px;
+        font-size: 20px;
+        font-weight: 800;
+        color: #111827;
     }
 
-    .staff-ui-chip {
-        display: inline-flex;
-        align-items: center;
-        height: 42px;
-        padding: 0 14px;
-        border-radius: 999px;
-        border: 1px solid #dbe2ea;
-        background: #ffffff;
-        color: #475569;
+    .section-header p {
+        margin: 0;
+        font-size: 13px;
+        color: #6b7280;
+    }
+
+    .section-link {
+        text-decoration: none;
         font-size: 13px;
         font-weight: 700;
+        color: #2563eb;
     }
 
-    .staff-ui-action {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        height: 44px;
-        padding: 0 18px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #2563eb, #1d4ed8);
-        color: #ffffff;
-        font-weight: 800;
-        font-size: 14px;
-        text-decoration: none;
-        box-shadow: 0 12px 24px rgba(37, 99, 235, 0.18);
-    }
-
-    .staff-ui-stats {
-        display: grid;
-        grid-template-columns: repeat(6, minmax(0, 1fr));
-        gap: 14px;
-    }
-
-    .staff-ui-stat {
-        background: #ffffff;
-        border: 1px solid #e9eef5;
-        border-radius: 18px;
-        padding: 18px;
-        box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
-    }
-
-    .staff-ui-stat-label {
-        font-size: 12px;
-        font-weight: 800;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #94a3b8;
-        margin-bottom: 10px;
-    }
-
-    .staff-ui-stat-value {
-        font-size: 28px;
-        font-weight: 800;
-        color: #0f172a;
-        line-height: 1;
-    }
-
-    .staff-ui-card {
-        background: #ffffff;
-        border: 1px solid #e9eef5;
-        border-radius: 22px;
-        box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
-        overflow: hidden;
-    }
-
-    .staff-ui-card-head {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 14px;
-        flex-wrap: wrap;
-        padding: 22px 22px 14px;
-        border-bottom: 1px solid #edf2f7;
-    }
-
-    .staff-ui-card-head h2 {
-        margin: 0;
-        font-size: 22px;
-        font-weight: 800;
-        color: #0f172a;
-    }
-
-    .staff-ui-card-head p {
-        margin: 6px 0 0;
-        font-size: 14px;
-        color: #64748b;
-        line-height: 1.6;
-    }
-
-    .staff-ui-table-wrap {
+    .table-wrap {
         overflow-x: auto;
-        padding: 0 14px 14px;
     }
 
-    .staff-ui-table {
+    .dashboard-table {
         width: 100%;
-        min-width: 980px;
         border-collapse: collapse;
+        min-width: 760px;
     }
 
-    .staff-ui-table th {
-        padding: 14px 16px;
+    .dashboard-table th {
         text-align: left;
         font-size: 12px;
-        font-weight: 800;
-        letter-spacing: 0.05em;
-        text-transform: uppercase;
-        color: #94a3b8;
-        border-bottom: 1px solid #edf2f7;
-        background: #fcfdff;
+        font-weight: 700;
+        color: #6b7280;
+        padding: 14px 20px;
+        border-bottom: 1px solid #eef2f7;
+        background: #fafafa;
     }
 
-    .staff-ui-table td {
-        padding: 16px;
-        border-bottom: 1px solid #f1f5f9;
-        vertical-align: middle;
-        color: #334155;
-        font-size: 14px;
+    .dashboard-table td {
+        font-size: 13px;
+        color: #374151;
+        padding: 14px 20px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: top;
     }
 
-    .staff-ui-table tr:hover {
-        background: #fafcff;
+    .dashboard-table tr:last-child td {
+        border-bottom: none;
     }
 
-    .staff-ui-patient {
-        font-weight: 800;
-        color: #0f172a;
+    .person-name {
+        font-weight: 700;
+        color: #111827;
+        margin-bottom: 3px;
     }
 
-    .staff-ui-subtext {
-        margin-top: 4px;
+    .person-sub {
         font-size: 12px;
-        color: #64748b;
+        color: #6b7280;
     }
 
-    .staff-ui-badge {
+    .status-pill {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        min-width: 108px;
-        padding: 8px 12px;
+        min-height: 26px;
+        padding: 0 10px;
         border-radius: 999px;
-        font-size: 12px;
-        font-weight: 800;
-        text-transform: capitalize;
-    }
-
-    .status-confirmed,
-    .status-completed,
-    .status-checked_in,
-    .status-in_progress {
-        background: #ecfdf3;
-        color: #15803d;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        white-space: nowrap;
     }
 
     .status-pending,
-    .status-under_review {
-        background: #eff6ff;
+    .status-under_review,
+    .status-rescheduled {
+        background: #dbeafe;
         color: #1d4ed8;
+    }
+
+    .status-confirmed,
+    .status-checked_in,
+    .status-in_progress,
+    .status-completed {
+        background: #dcfce7;
+        color: #15803d;
     }
 
     .status-no_show,
     .status-cancelled,
     .status-rejected {
-        background: #fef2f2;
+        background: #fee2e2;
         color: #dc2626;
     }
 
-    .staff-ui-row-actions {
+    .guest-badge,
+    .patient-badge {
+        display: inline-block;
+        margin-top: 4px;
+        padding: 3px 7px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+    }
+
+    .guest-badge {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
+    .patient-badge {
+        background: #ecfeff;
+        color: #0f766e;
+    }
+
+    .mini-actions {
         display: flex;
-        gap: 8px;
         flex-wrap: wrap;
+        gap: 6px;
     }
 
-    .staff-ui-row-link {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        padding: 9px 12px;
-        border-radius: 10px;
-        background: #eff6ff;
-        color: #2563eb;
-        font-size: 12px;
-        font-weight: 800;
+    .mini-actions a {
         text-decoration: none;
+        padding: 6px 10px;
+        border: 1px solid #d1d5db;
+        border-radius: 6px;
+        font-size: 12px;
+        color: #374151;
+        background: #ffffff;
     }
 
-    .staff-ui-empty {
-        padding: 40px 22px;
-        color: #64748b;
+    .mini-actions a.primary {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
+    }
+
+    .empty-row {
+        padding: 18px 20px;
         font-size: 14px;
+        color: #6b7280;
     }
 
-    @media (max-width: 1200px) {
-        .staff-ui-stats {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
+    @keyframes fadeSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
         }
     }
 
-    @media (max-width: 768px) {
-        .staff-ui-stats {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-
-        .staff-ui-search {
-            min-width: 100%;
-        }
-    }
-
-    @media (max-width: 520px) {
-        .staff-ui-stats {
+    @media (max-width: 900px) {
+        .summary-grid {
             grid-template-columns: 1fr;
         }
     }
 </style>
 
-<div class="staff-dashboard">
-    <div class="staff-ui-topbar">
-        <div class="staff-ui-title-wrap">
-            <h1>Appointments Overview</h1>
-            <p>Manage appointment requests, clinic-day flow, and staff actions from one dashboard.</p>
+<div class="dashboard-page">
+    <div class="welcome-panel">
+        <div>
+            <div class="welcome-label">Hello</div>
+            <h1 class="welcome-title">Welcome!</h1>
+            <p class="welcome-subtitle">This is your daily overview.</p>
         </div>
 
-        <div class="staff-ui-tools">
-            <input type="text" class="staff-ui-search" placeholder="Search patient, service, or date" readonly>
-            <span class="staff-ui-chip">{{ now()->format('M d, Y') }}</span>
-
-            @if(Route::has('staff.appointment-requests.index'))
-                <a href="{{ route('staff.appointment-requests.index') }}" class="staff-ui-action">
-                    Open Requests
-                </a>
-            @endif
+        <div class="welcome-actions">
+            <a href="{{ route('staff.appointment-requests.index') }}" class="welcome-btn primary">Request Queue</a>
+            <a href="{{ route('staff.appointments.index', ['date' => now()->toDateString()]) }}" class="welcome-btn">Today's Schedule</a>
+            <a href="{{ route('staff.appointments.create') }}" class="welcome-btn">Create Appointment</a>
+            <a href="{{ route('staff.patients.index') }}" class="welcome-btn">Patients</a>
         </div>
     </div>
 
-    <section class="staff-ui-stats">
-        <div class="staff-ui-stat">
-            <div class="staff-ui-stat-label">Pending Requests</div>
-            <div class="staff-ui-stat-value">{{ $stats['pending_requests'] ?? 0 }}</div>
+    <div class="summary-grid">
+        <div class="summary-card one">
+            <div class="summary-number">{{ $stats['pending_requests'] ?? 0 }}</div>
+            <div class="summary-title">Pending Requests</div>
+            <div class="summary-text">Requests waiting for staff review and decision.</div>
         </div>
 
-        <div class="staff-ui-stat">
-            <div class="staff-ui-stat-label">Today's Appointments</div>
-            <div class="staff-ui-stat-value">{{ $stats['today_appointments'] ?? 0 }}</div>
+        <div class="summary-card two">
+            <div class="summary-number">{{ $stats['today_appointments'] ?? 0 }}</div>
+            <div class="summary-title">Today's Appointments</div>
+            <div class="summary-text">Appointments scheduled for today.</div>
         </div>
 
-        <div class="staff-ui-stat">
-            <div class="staff-ui-stat-label">Confirmed</div>
-            <div class="staff-ui-stat-value">{{ $stats['confirmed_today'] ?? 0 }}</div>
+        <div class="summary-card three">
+            <div class="summary-number">{{ $stats['confirmed_upcoming'] ?? 0 }}</div>
+            <div class="summary-title">Confirmed Upcoming</div>
+            <div class="summary-text">Confirmed appointments after today.</div>
         </div>
+    </div>
 
-        <div class="staff-ui-stat">
-            <div class="staff-ui-stat-label">Checked In</div>
-            <div class="staff-ui-stat-value">{{ $stats['checked_in_today'] ?? 0 }}</div>
-        </div>
+    <div class="top-tabs">
+        <button type="button" class="top-tab active" data-tab="today">
+            Today's Appointments ({{ ($todayAppointments ?? collect())->count() }})
+        </button>
 
-        <div class="staff-ui-stat">
-            <div class="staff-ui-stat-label">Completed</div>
-            <div class="staff-ui-stat-value">{{ $stats['completed_today'] ?? 0 }}</div>
-        </div>
+        <button type="button" class="top-tab" data-tab="requests">
+            Appointment Requests ({{ ($pendingRequests ?? collect())->count() }})
+        </button>
 
-        <div class="staff-ui-stat">
-            <div class="staff-ui-stat-label">No Show</div>
-            <div class="staff-ui-stat-value">{{ $stats['no_show_today'] ?? 0 }}</div>
-        </div>
-    </section>
+        <button type="button" class="top-tab" data-tab="upcoming">
+            Upcoming Appointments ({{ ($upcomingAppointments ?? collect())->count() }})
+        </button>
+    </div>
 
-    <section class="staff-ui-card">
-        <div class="staff-ui-card-head">
+    <div class="section-box tab-section" id="tab-today">
+        <div class="section-header">
             <div>
-                <h2>Upcoming Appointments</h2>
-                <p>Clean appointment list for staff review, confirmation follow-up, and clinic-day monitoring.</p>
+                <h2>Today's Appointments</h2>
             </div>
-
-            @if(Route::has('staff.appointments.index'))
-                <a href="{{ route('staff.appointments.index') }}" class="staff-ui-row-link">
-                    View Full Schedule
-                </a>
-            @endif
+            <a href="{{ route('staff.appointments.index', ['date' => now()->toDateString()]) }}" class="section-link">View all</a>
         </div>
 
-        <div class="staff-ui-table-wrap">
-            @if(($appointments ?? collect())->count())
-                <table class="staff-ui-table">
+        @if(($todayAppointments ?? collect())->count())
+            <div class="table-wrap">
+                <table class="dashboard-table">
                     <thead>
                         <tr>
                             <th>Patient</th>
                             <th>Service</th>
-                            <th>Date</th>
                             <th>Time</th>
                             <th>Dentist</th>
                             <th>Status</th>
@@ -345,43 +435,56 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($appointments as $appointment)
+                        @foreach($todayAppointments as $appointment)
                             @php
-                                $statusClass = 'status-' . strtolower($appointment->status ?? 'pending');
-                                $patientName = trim(($appointment->patient?->first_name ?? 'Guest') . ' ' . ($appointment->patient?->last_name ?? ''));
+                                $isGuestOnly = !$appointment->patient && $appointment->request;
+                                $isReturning = (bool) $appointment->patient;
+
+                                $patientName = $appointment->patient
+                                    ? trim(($appointment->patient->first_name ?? '') . ' ' . ($appointment->patient->last_name ?? ''))
+                                    : trim(($appointment->request?->guest_first_name ?? 'Guest') . ' ' . ($appointment->request?->guest_last_name ?? 'Patient'));
+
+                                $dentistName = trim(
+                                    ($appointment->dentist?->user?->first_name ?? 'Dentist') . ' ' .
+                                    ($appointment->dentist?->user?->last_name ?? '')
+                                );
+
+                                $statusClass = 'status-' . strtolower((string) ($appointment->status ?? 'pending'));
                             @endphp
+
                             <tr>
                                 <td>
-                                    <div class="staff-ui-patient">{{ $patientName ?: 'Guest Patient' }}</div>
-                                    <div class="staff-ui-subtext">{{ $appointment->appointment_code ?? '—' }}</div>
+                                    <div class="person-name">{{ $patientName ?: 'Guest Patient' }}</div>
+                                    <div class="person-sub">{{ $appointment->appointment_code ?? '—' }}</div>
+
+                                    @if($isGuestOnly)
+                                        <div class="guest-badge">Guest</div>
+                                    @elseif($isReturning)
+                                        <div class="patient-badge">Patient</div>
+                                    @endif
                                 </td>
                                 <td>{{ $appointment->service?->service_name ?? '—' }}</td>
-                                <td>{{ optional($appointment->appointment_date)->format('Y-m-d') ?? '—' }}</td>
                                 <td>
-                                    {{ \Carbon\Carbon::parse($appointment->start_time)->format('h:i A') }}
+                                    {{ $appointment->start_time ? \Carbon\Carbon::parse($appointment->start_time)->format('h:i A') : '—' }}
                                     -
-                                    {{ \Carbon\Carbon::parse($appointment->end_time)->format('h:i A') }}
+                                    {{ $appointment->end_time ? \Carbon\Carbon::parse($appointment->end_time)->format('h:i A') : '—' }}
                                 </td>
+                                <td>{{ $dentistName ?: 'Dentist' }}</td>
                                 <td>
-                                    {{ trim(($appointment->dentist?->user?->first_name ?? 'Dentist') . ' ' . ($appointment->dentist?->user?->last_name ?? '')) }}
-                                </td>
-                                <td>
-                                    <span class="staff-ui-badge {{ $statusClass }}">
+                                    <span class="status-pill {{ $statusClass }}">
                                         {{ str_replace('_', ' ', $appointment->status ?? 'pending') }}
                                     </span>
                                 </td>
                                 <td>
-                                    <div class="staff-ui-row-actions">
-                                        @if(Route::has('staff.appointments.show'))
-                                            <a href="{{ route('staff.appointments.show', $appointment->appointment_id) }}" class="staff-ui-row-link">
-                                                View
-                                            </a>
+                                    <div class="mini-actions">
+                                        <a href="{{ route('staff.appointments.show', $appointment->appointment_id) }}" class="primary">View</a>
+
+                                        @if($appointment->request_id)
+                                            <a href="{{ route('staff.appointment-requests.show', $appointment->request_id) }}">Request</a>
                                         @endif
 
-                                        @if(Route::has('staff.appointment-requests.show') && $appointment->request_id)
-                                            <a href="{{ route('staff.appointment-requests.show', $appointment->request_id) }}" class="staff-ui-row-link">
-                                                Request
-                                            </a>
+                                        @if($appointment->patient)
+                                            <a href="{{ route('staff.patients.show', $appointment->patient->patient_id) }}">Patient</a>
                                         @endif
                                     </div>
                                 </td>
@@ -389,12 +492,181 @@
                         @endforeach
                     </tbody>
                 </table>
-            @else
-                <div class="staff-ui-empty">
-                    No appointment records found yet. Once requests are confirmed, they will appear here as real appointment records.
-                </div>
-            @endif
+            </div>
+        @else
+            <div class="empty-row">No appointments scheduled for today.</div>
+        @endif
+    </div>
+
+    <div class="section-box tab-section" id="tab-requests" style="display:none;">
+        <div class="section-header">
+            <div>
+                <h2>Appointment Requests</h2>
+            </div>
+            <a href="{{ route('staff.appointment-requests.index') }}" class="section-link">View all</a>
         </div>
-    </section>
+
+        @if(($pendingRequests ?? collect())->count())
+            <div class="table-wrap">
+                <table class="dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Service</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pendingRequests as $request)
+                            @php
+                                $requestPatientName = $request->patient
+                                    ? trim(($request->patient->first_name ?? '') . ' ' . ($request->patient->last_name ?? ''))
+                                    : trim(($request->guest_first_name ?? '') . ' ' . ($request->guest_last_name ?? ''));
+
+                                $requestStatusClass = 'status-' . strtolower((string) ($request->request_status ?? 'pending'));
+                            @endphp
+
+                            <tr>
+                                <td>
+                                    <div class="person-name">{{ $requestPatientName ?: 'Guest Patient' }}</div>
+                                    <div class="person-sub">{{ $request->request_code ?? '—' }}</div>
+
+                                    @if(!$request->patient)
+                                        <div class="guest-badge">Guest</div>
+                                    @else
+                                        <div class="patient-badge">Patient</div>
+                                    @endif
+                                </td>
+                                <td>{{ $request->service?->service_name ?? '—' }}</td>
+                                <td>{{ $request->preferred_date ? \Carbon\Carbon::parse($request->preferred_date)->format('M d, Y') : '—' }}</td>
+                                <td>{{ $request->preferred_start_time ? \Carbon\Carbon::parse($request->preferred_start_time)->format('h:i A') : '—' }}</td>
+                                <td>
+                                    <span class="status-pill {{ $requestStatusClass }}">
+                                        {{ str_replace('_', ' ', $request->request_status ?? 'pending') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="mini-actions">
+                                        <a href="{{ route('staff.appointment-requests.show', $request->request_id) }}" class="primary">Review</a>
+
+                                        @if($request->patient)
+                                            <a href="{{ route('staff.patients.show', $request->patient->patient_id) }}">Patient</a>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div class="empty-row">No pending appointment requests right now.</div>
+        @endif
+    </div>
+
+    <div class="section-box tab-section" id="tab-upcoming" style="display:none;">
+        <div class="section-header">
+            <div>
+                <h2>Upcoming Appointments</h2>
+                <p>Next confirmed appointments after today.</p>
+            </div>
+        </div>
+
+        @if(($upcomingAppointments ?? collect())->count())
+            <div class="table-wrap">
+                <table class="dashboard-table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>Service</th>
+                            <th>Date</th>
+                            <th>Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($upcomingAppointments as $appointment)
+                            @php
+                                $upcomingPatient = $appointment->patient
+                                    ? trim(($appointment->patient->first_name ?? '') . ' ' . ($appointment->patient->last_name ?? ''))
+                                    : trim(($appointment->request?->guest_first_name ?? 'Guest') . ' ' . ($appointment->request?->guest_last_name ?? 'Patient'));
+
+                                $upcomingStatusClass = 'status-' . strtolower((string) ($appointment->status ?? 'confirmed'));
+                            @endphp
+
+                            <tr>
+                                <td>
+                                    <div class="person-name">{{ $upcomingPatient ?: 'Guest Patient' }}</div>
+                                    <div class="person-sub">{{ $appointment->appointment_code ?? '—' }}</div>
+
+                                    @if(!$appointment->patient && $appointment->request)
+                                        <div class="guest-badge">Guest</div>
+                                    @elseif($appointment->patient)
+                                        <div class="patient-badge">Patient</div>
+                                    @endif
+                                </td>
+                                <td>{{ $appointment->service?->service_name ?? '—' }}</td>
+                                <td>{{ $appointment->appointment_date ? \Carbon\Carbon::parse($appointment->appointment_date)->format('M d, Y') : '—' }}</td>
+                                <td>{{ $appointment->start_time ? \Carbon\Carbon::parse($appointment->start_time)->format('h:i A') : '—' }}</td>
+                                <td>
+                                    <span class="status-pill {{ $upcomingStatusClass }}">
+                                        {{ str_replace('_', ' ', $appointment->status ?? 'confirmed') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="mini-actions">
+                                        <a href="{{ route('staff.appointments.show', $appointment->appointment_id) }}" class="primary">View</a>
+
+                                        @if($appointment->patient)
+                                            <a href="{{ route('staff.patients.show', $appointment->patient->patient_id) }}">Patient</a>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <div class="empty-row">No upcoming appointments after today.</div>
+        @endif
+    </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const tabs = document.querySelectorAll('.top-tab');
+    const sections = {
+        today: document.getElementById('tab-today'),
+        requests: document.getElementById('tab-requests'),
+        upcoming: document.getElementById('tab-upcoming'),
+    };
+
+    tabs.forEach(function (tab) {
+        tab.addEventListener('click', function () {
+            tabs.forEach(function (item) {
+                item.classList.remove('active');
+            });
+
+            this.classList.add('active');
+
+            Object.values(sections).forEach(function (section) {
+                if (section) {
+                    section.style.display = 'none';
+                }
+            });
+
+            const key = this.dataset.tab;
+
+            if (sections[key]) {
+                sections[key].style.display = 'block';
+            }
+        });
+    });
+});
+</script>
 @endsection

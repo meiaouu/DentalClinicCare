@@ -11,6 +11,7 @@ use App\Models\Dentist;
 use App\Services\Appointment\AppointmentRequestReviewService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Http\Request;
 
 class AppointmentRequestController extends Controller
 {
@@ -19,25 +20,35 @@ class AppointmentRequestController extends Controller
     ) {
     }
 
-    public function index(): View
-    {
-        $requests = AppointmentRequest::with([
-                'service',
-                'preferredDentist.user',
-                'patient',
-            ])
-            ->whereIn('request_status', ['pending', 'under_review'])
-            ->latest('created_at')
-            ->paginate(15);
+    public function index(Request $request)
+{
+    $query = AppointmentRequest::with(['patient', 'service']);
 
-        return view('staff.appointment-requests.index', compact('requests'));
+    // Filter: Service
+    if ($request->filled('service_id')) {
+        $query->where('service_id', $request->service_id);
     }
+
+    // Sort
+    if ($request->input('sort') === 'oldest') {
+        $query->oldest();
+    } else {
+        $query->latest();
+    }
+
+    $requests = $query->paginate(10)->withQueryString();
+
+    $services = \App\Models\Service::orderBy('service_name')->get();
+
+    return view('staff.appointment-requests.index', compact('requests', 'services'));
+}
 
     public function show(AppointmentRequest $appointmentRequest): View
     {
         $appointmentRequest->load([
             'service',
             'answers.option.values',
+            'answers.selectedValue',
             'preferredDentist.user',
             'patient',
             'convertedAppointment',
@@ -104,8 +115,8 @@ class AppointmentRequestController extends Controller
             $this->reviewService->reschedule(
                 requestModel: $appointmentRequest,
                 dentistId: (int) $request->input('dentist_id'),
-                appointmentDate: $request->input('appointment_date'),
-                startTime: $request->input('start_time'),
+                appointmentDate: $request->input('preferred_date'),
+                startTime: $request->input('preferred_start_time'),
                 staffNotes: $request->input('remarks')
             );
 

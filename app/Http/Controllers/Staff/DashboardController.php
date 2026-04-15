@@ -22,8 +22,8 @@ class DashboardController extends Controller
                 ->whereDate('appointment_date', $today)
                 ->count(),
 
-            'confirmed_today' => Appointment::query()
-                ->whereDate('appointment_date', $today)
+            'confirmed_upcoming' => Appointment::query()
+                ->whereDate('appointment_date', '>', $today)
                 ->where('status', 'confirmed')
                 ->count(),
 
@@ -43,17 +43,48 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        $appointments = Appointment::query()
-            ->with(['patient', 'dentist.user', 'service'])
-            ->whereDate('appointment_date', '>=', $today)
+        $todayAppointments = Appointment::query()
+            ->with([
+                'patient',
+                'dentist.user',
+                'service',
+                'request',
+            ])
+            ->whereDate('appointment_date', $today)
+            ->orderBy('start_time')
+            ->limit(10)
+            ->get();
+
+        $pendingRequests = AppointmentRequest::query()
+            ->with([
+                'patient',
+                'service',
+                'preferredDentist.user',
+            ])
+            ->whereIn('request_status', ['pending', 'under_review'])
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
+        $upcomingAppointments = Appointment::query()
+            ->with([
+                'patient',
+                'dentist.user',
+                'service',
+                'request',
+            ])
+            ->whereDate('appointment_date', '>', $today)
+            ->whereIn('status', ['confirmed', 'rescheduled'])
             ->orderBy('appointment_date')
             ->orderBy('start_time')
-            ->limit(12)
+            ->limit(8)
             ->get();
 
         return view('staff.dashboard', [
             'stats' => $stats,
-            'appointments' => $appointments,
+            'todayAppointments' => $todayAppointments,
+            'pendingRequests' => $pendingRequests,
+            'upcomingAppointments' => $upcomingAppointments,
         ]);
     }
 }

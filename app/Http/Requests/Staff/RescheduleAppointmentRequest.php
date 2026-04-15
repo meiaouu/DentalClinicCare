@@ -15,9 +15,9 @@ class RescheduleAppointmentRequest extends FormRequest
     {
         return [
             'dentist_id' => ['required', 'exists:dentists,dentist_id'],
-            'preferred_date' => ['required', 'date'],
-            'preferred_start_time' => ['required', 'date_format:H:i'],
-            'remarks' => ['nullable', 'string'],
+            'appointment_date' => ['required', 'date', 'after_or_equal:today'],
+            'start_time' => ['required', 'date_format:H:i'],
+            'remarks' => ['nullable', 'string', 'max:1000'],
         ];
     }
 }

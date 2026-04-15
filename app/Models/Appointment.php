@@ -36,6 +36,7 @@ class Appointment extends Model
         'remarks',
     ];
 
+
     protected function casts(): array
     {
         return [
@@ -50,14 +51,14 @@ class Appointment extends Model
         ];
     }
 
-    public function request(): BelongsTo
-    {
-        return $this->belongsTo(AppointmentRequest::class, 'request_id', 'request_id');
-    }
+    public function request()
+{
+    return $this->belongsTo(\App\Models\AppointmentRequest::class, 'request_id', 'request_id');
+}
 
     public function dentist(): BelongsTo
     {
-        return $this->belongsTo(Dentist::class, 'dentist_id', 'dentist_id');
+        return $this->belongsTo(\App\Models\Dentist::class, 'dentist_id', 'dentist_id');
     }
 
     public function service(): BelongsTo
@@ -65,9 +66,9 @@ class Appointment extends Model
         return $this->belongsTo(Service::class, 'service_id', 'service_id');
     }
 
-    public function patient(): BelongsTo
+    public function patient()
     {
-        return $this->belongsTo(Patient::class, 'patient_id', 'patient_id');
+        return $this->belongsTo(\App\Models\Patient::class, 'patient_id', 'patient_id');
     }
 
     public function bookedBy(): BelongsTo
