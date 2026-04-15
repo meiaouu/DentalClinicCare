@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class MessageThread extends Model
 {
+    protected $table = 'message_threads';
     protected $primaryKey = 'thread_id';
 
     protected $fillable = [
@@ -38,27 +39,16 @@ class MessageThread extends Model
         return $this->hasMany(Message::class, 'thread_id', 'thread_id');
     }
 
-    public function latestMessage(): HasMany
-    {
-        return $this->hasMany(Message::class, 'thread_id', 'thread_id')->latest('message_id');
-    }
-
     public function getDisplayNameAttribute(): string
     {
         if ($this->patient) {
-            return trim(
-                ($this->patient->first_name ?? '') . ' ' .
-                ($this->patient->last_name ?? '')
-            ) ?: 'Patient';
+            return trim(($this->patient->first_name ?? '') . ' ' . ($this->patient->last_name ?? '')) ?: 'Patient';
         }
 
         if ($this->appointmentRequest) {
-            return trim(
-                ($this->appointmentRequest->guest_first_name ?? '') . ' ' .
-                ($this->appointmentRequest->guest_last_name ?? '')
-            ) ?: 'Guest Request';
+            return trim(($this->appointmentRequest->guest_first_name ?? '') . ' ' . ($this->appointmentRequest->guest_last_name ?? '')) ?: 'Guest';
         }
 
-        return 'Message Thread';
+        return 'Conversation';
     }
 }

@@ -27,12 +27,19 @@
         [
             'title' => 'Patient',
             'items' => [
-                [
-                    'label' => 'Patients',
-                    'route' => Route::has('staff.patients.index') ? route('staff.patients.index') : '#',
-                    'active' => request()->routeIs('staff.patients.*'),
-                    'enabled' => Route::has('staff.patients.index'),
-                ],
+    [
+        'label' => 'Patients',
+        'route' => Route::has('staff.patients.index') ? route('staff.patients.index') : '#',
+        'active' => request()->routeIs('staff.patients.*'),
+        'enabled' => Route::has('staff.patients.index'),
+    ],
+    [
+        'label' => 'Messages',
+        'route' => Route::has('staff.messages.index') ? route('staff.messages.index') : '#',
+        'active' => request()->routeIs('staff.messages.*'),
+        'enabled' => Route::has('staff.messages.index'),
+    ],
+
             ],
         ],
         [

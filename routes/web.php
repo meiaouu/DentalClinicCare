@@ -13,6 +13,8 @@ use App\Http\Controllers\Patient\DashboardController as PatientDashboardControll
 use App\Http\Controllers\Staff\PatientController;
 use App\Http\Controllers\Staff\NotificationController;
 use App\Http\Controllers\Staff\MessageController;
+use App\Http\Controllers\PublicMessageController;
+
 /*
 |--------------------------------------------------------------------------
 | Public
@@ -239,6 +241,29 @@ Route::middleware('internal.redirect')->group(function () {
 });
 
 
+
+
+
+
+
+
+
+
+
+
+
+/*
+|--------------------------------------------------------------------------
+| Messaging
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth')->group(function () {
+    Route::get('/messages/patient', [PublicMessageController::class, 'patientForm'])->name('messages.patient.form');
+    Route::post('/messages/patient', [PublicMessageController::class, 'patientSend'])->name('messages.patient.send');
+});
+
+Route::get('/messages/guest/{requestCode}', [PublicMessageController::class, 'guestForm'])->name('messages.guest.form');
+Route::post('/messages/guest/{requestCode}', [PublicMessageController::class, 'guestSend'])->name('messages.guest.send');
 
 
 

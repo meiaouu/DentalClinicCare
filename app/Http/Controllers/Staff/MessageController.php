@@ -3,14 +3,13 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
-use App\Models\AppointmentRequest;
 use App\Models\Message;
 use App\Models\MessageThread;
-use App\Models\Patient;
+use App\Services\Messaging\MessageThreadService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
+
 
 class MessageController extends Controller
 {
@@ -35,7 +34,8 @@ class MessageController extends Controller
                         ->orWhereHas('appointmentRequest', function ($requestQuery) use ($search) {
                             $requestQuery->where('guest_first_name', 'like', "%{$search}%")
                                 ->orWhere('guest_last_name', 'like', "%{$search}%")
-                                ->orWhere('guest_contact_number', 'like', "%{$search}%");
+                                ->orWhere('guest_contact_number', 'like', "%{$search}%")
+                                ->orWhere('request_code', 'like', "%{$search}%");
                         });
                 });
             })
@@ -63,77 +63,19 @@ class MessageController extends Controller
         return view('staff.messages.show', compact('thread'));
     }
 
-    public function storePatientThread(Request $request, Patient $patient): RedirectResponse
-    {
-        $validated = $request->validate([
-            'subject' => ['nullable', 'string', 'max:150'],
-            'message_body' => ['required', 'string', 'max:5000'],
-        ]);
-
-        $thread = MessageThread::create([
-            'patient_id' => $patient->patient_id,
-            'thread_type' => 'patient',
-            'subject' => $validated['subject'] ?: 'Patient Message',
-            'last_message_by_user_id' => Auth::id(),
-            'last_message_at' => now(),
-        ]);
-
-        Message::create([
-            'thread_id' => $thread->thread_id,
-            'sender_user_id' => Auth::id(),
-            'sender_type' => 'staff',
-            'message_body' => $validated['message_body'],
-        ]);
-
-        return redirect()
-            ->route('staff.messages.show', $thread->thread_id)
-            ->with('success', 'Message thread created.');
-    }
-
-    public function storeGuestRequestThread(Request $request, AppointmentRequest $appointmentRequest): RedirectResponse
-    {
-        $validated = $request->validate([
-            'subject' => ['nullable', 'string', 'max:150'],
-            'message_body' => ['required', 'string', 'max:5000'],
-        ]);
-
-        $thread = MessageThread::create([
-            'appointment_request_id' => $appointmentRequest->request_id,
-            'thread_type' => 'guest_request',
-            'subject' => $validated['subject'] ?: 'Guest Request Message',
-            'last_message_by_user_id' => Auth::id(),
-            'last_message_at' => now(),
-        ]);
-
-        Message::create([
-            'thread_id' => $thread->thread_id,
-            'sender_user_id' => Auth::id(),
-            'sender_type' => 'staff',
-            'message_body' => $validated['message_body'],
-        ]);
-
-        return redirect()
-            ->route('staff.messages.show', $thread->thread_id)
-            ->with('success', 'Guest request thread created.');
-    }
-
-    public function reply(Request $request, MessageThread $thread): RedirectResponse
-    {
+    public function reply(
+        Request $request,
+        MessageThread $thread,
+        MessageThreadService $messageService
+    ): RedirectResponse {
         $validated = $request->validate([
             'message_body' => ['required', 'string', 'max:5000'],
         ]);
 
-        Message::create([
-            'thread_id' => $thread->thread_id,
-            'sender_user_id' => Auth::id(),
-            'sender_type' => 'staff',
-            'message_body' => $validated['message_body'],
-        ]);
-
-        $thread->update([
-            'last_message_by_user_id' => Auth::id(),
-            'last_message_at' => now(),
-        ]);
+        $messageService->replyAsStaff(
+            thread: $thread,
+            messageBody: $validated['message_body']
+        );
 
         return back()->with('success', 'Reply sent.');
     }

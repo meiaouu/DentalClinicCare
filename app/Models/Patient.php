@@ -39,7 +39,7 @@ class Patient extends Model
         return $this->hasMany(AppointmentRequest::class, 'patient_id', 'patient_id');
     }
 
-    public function messageThreads()
+public function messageThreads()
 {
     return $this->hasMany(\App\Models\MessageThread::class, 'patient_id', 'patient_id');
 }

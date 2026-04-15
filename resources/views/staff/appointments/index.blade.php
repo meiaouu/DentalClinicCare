@@ -3,9 +3,16 @@
 @section('content')
 <style>
     .appointments-page {
-        display: flex;
-        flex-direction: column;
+        display: grid;
         gap: 18px;
+    }
+
+    .appointments-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+        flex-wrap: wrap;
     }
 
     .appointments-header h1 {
@@ -19,6 +26,26 @@
         margin: 0;
         color: #64748b;
         font-size: 14px;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+
+    .header-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 42px;
+        padding: 0 16px;
+        border-radius: 10px;
+        background: #0f9d8a;
+        color: #ffffff;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 700;
     }
 
     .appointments-filter {
@@ -55,13 +82,7 @@
         text-decoration: none;
         font-size: 14px;
         font-weight: 700;
-    }
-
-    .filter-note {
-        width: 100%;
-        font-size: 12px;
-        color: #64748b;
-        margin-top: 2px;
+        border: 1px solid #cbd5e1;
     }
 
     .alert-box {
@@ -179,6 +200,11 @@
         color: #dc2626;
     }
 
+    .badge-guest {
+        background: #fff7ed;
+        color: #c2410c;
+    }
+
     .appointment-details {
         display: grid;
         grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -244,6 +270,7 @@
     .btn-progress { background: #7c3aed; }
     .btn-complete { background: #16a34a; }
     .btn-noshow { background: #dc2626; }
+
     .btn-cancel {
         background: #ffffff;
         color: #334155;
@@ -253,6 +280,19 @@
     .request-link {
         background: #eff6ff;
         color: #2563eb;
+    }
+
+    .action-disabled {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        padding: 0 14px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        background: #e5e7eb;
+        color: #64748b;
     }
 
     .empty-state {
@@ -280,17 +320,20 @@
 
 <div class="appointments-page">
     <div class="appointments-header">
-        <h1>Daily Appointments</h1>
-        <p>View appointments by date, track patient status, and update progress.</p>
+        <div>
+            <h1>Daily Appointments</h1>
+            <p>View and manage appointments for the selected date.</p>
+        </div>
+
+        <div class="header-actions">
+            @if (Route::has('staff.appointments.create'))
+                <a href="{{ route('staff.appointments.create') }}" class="header-btn">
+                    Create Appointment
+                </a>
+            @endif
+        </div>
     </div>
-@if (Route::has('staff.appointments.create'))
-    <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;">
-        <a href="{{ route('staff.appointments.create') }}"
-           style="display:inline-flex; align-items:center; justify-content:center; min-height:42px; padding:0 16px; border-radius:10px; background:#0f9d8a; color:#ffffff; text-decoration:none; font-size:14px; font-weight:700;">
-            Create Appointment
-        </a>
-    </div>
-@endif
+
     @if(session('success'))
         <div class="alert-box alert-success">
             {{ session('success') }}
@@ -320,6 +363,7 @@
             onchange="document.getElementById('appointmentsFilterForm').submit()"
         >
             <option value="">All Statuses</option>
+            <option value="pending" @selected($status === 'pending')>Pending</option>
             <option value="confirmed" @selected($status === 'confirmed')>Confirmed</option>
             <option value="rescheduled" @selected($status === 'rescheduled')>Rescheduled</option>
             <option value="checked_in" @selected($status === 'checked_in')>Checked In</option>
@@ -330,19 +374,14 @@
         </select>
 
         <a href="{{ route('staff.appointments.index') }}" class="filter-reset">Reset</a>
-
-        <div class="filter-note">
-            Filters apply automatically when you change the date or status.
-        </div>
     </form>
 
     <div class="appointments-list">
         @forelse($appointments as $appointment)
             @php
-                $patientName = trim(
-                    ($appointment->patient?->first_name ?? 'Guest') . ' ' .
-                    ($appointment->patient?->last_name ?? 'Patient')
-                );
+                $patientName = $appointment->patient
+                    ? trim(($appointment->patient->first_name ?? '') . ' ' . ($appointment->patient->last_name ?? ''))
+                    : trim(($appointment->request?->guest_first_name ?? 'Guest') . ' ' . ($appointment->request?->guest_last_name ?? 'Patient'));
 
                 $dentistName = trim(
                     ($appointment->dentist?->user?->first_name ?? 'Dentist') . ' ' .
@@ -359,18 +398,45 @@
                     'no_show' => 'badge-noshow',
                     default => 'badge-arrival',
                 };
+
+                $isGuest = !$appointment->patient && $appointment->request;
+
+                $arrivalAllowed = false;
+                $isBefore = false;
+                $isExpired = false;
+
+                if ($appointment->appointment_date && $appointment->start_time) {
+                    $startDateTime = \Carbon\Carbon::parse(
+                        \Carbon\Carbon::parse($appointment->appointment_date)->format('Y-m-d') . ' ' . $appointment->start_time,
+                        'Asia/Manila'
+                    );
+
+                    $now = \Carbon\Carbon::now('Asia/Manila');
+                    $allowedFrom = $startDateTime->copy()->subMinutes(15);
+                    $endOfDay = $startDateTime->copy()->endOfDay();
+
+                    $arrivalAllowed = $now->between($allowedFrom, $endOfDay);
+                    $isBefore = $now->lt($allowedFrom);
+                    $isExpired = $now->gt($endOfDay);
+                }
+
+                $canShowArrivalButtons = in_array($appointment->status, ['confirmed', 'rescheduled'], true);
             @endphp
 
             <div class="appointment-card">
                 <div class="appointment-top">
                     <div>
-                        <h2 class="appointment-patient">{{ $patientName }}</h2>
+                        <h2 class="appointment-patient">{{ $patientName ?: 'Guest Patient' }}</h2>
                         <div class="appointment-sub">
                             {{ $appointment->appointment_code ?? 'No appointment code' }}
                         </div>
                     </div>
 
                     <div class="badge-wrap">
+                        @if($isGuest)
+                            <span class="badge badge-guest">Guest</span>
+                        @endif
+
                         <span class="badge {{ $statusClass }}">
                             {{ str_replace('_', ' ', $appointment->status ?? 'pending') }}
                         </span>
@@ -385,9 +451,9 @@
                     <div class="detail-box">
                         <div class="detail-label">Time</div>
                         <div class="detail-value">
-                            {{ \Carbon\Carbon::parse($appointment->start_time)->format('h:i A') }}
+                            {{ $appointment->start_time ? \Carbon\Carbon::parse($appointment->start_time)->format('h:i A') : '—' }}
                             -
-                            {{ \Carbon\Carbon::parse($appointment->end_time)->format('h:i A') }}
+                            {{ $appointment->end_time ? \Carbon\Carbon::parse($appointment->end_time)->format('h:i A') : '—' }}
                         </div>
                     </div>
 
@@ -414,7 +480,7 @@
                         View
                     </a>
 
-                    @if(in_array($appointment->status, ['confirmed', 'rescheduled'], true))
+                    @if($canShowArrivalButtons && $arrivalAllowed)
                         <form method="POST" action="{{ route('staff.appointments.arrived', $appointment->appointment_id) }}">
                             @csrf
                             <button type="submit" class="action-btn btn-arrived">Arrived</button>
@@ -429,6 +495,16 @@
                             @csrf
                             <button type="submit" class="action-btn btn-noshow">No Show</button>
                         </form>
+                    @elseif($canShowArrivalButtons)
+                        <span class="action-disabled">
+                            @if($isBefore)
+                                Too early
+                            @elseif($isExpired)
+                                Expired (No Show)
+                            @else
+                                Not allowed
+                            @endif
+                        </span>
                     @endif
 
                     @if($appointment->status === 'checked_in')
