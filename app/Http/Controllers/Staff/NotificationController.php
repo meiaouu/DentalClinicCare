@@ -3,43 +3,56 @@
 namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 
 class NotificationController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
-        $user = $request->user();
+        /** @var User|null $user */
+        $user = Auth::user();
 
-        $notifications = $user->notifications()
-            ->latest()
-            ->limit(5)
-            ->get()
-            ->map(function ($notification) {
-                return [
-                    'id' => $notification->id,
-                    'title' => $notification->data['title'] ?? 'Notification',
-                    'message' => $notification->data['message'] ?? '',
-                    'url' => $notification->data['url'] ?? '#',
-                    'created_at' => optional($notification->created_at)->diffForHumans(),
-                    'read_at' => $notification->read_at,
-                ];
-            });
+        if (!$user) {
+            return response()->json([
+                'notifications' => [],
+                'unread_count' => 0,
+            ], 401);
+        }
 
         return response()->json([
+            'notifications' => $user->notifications()->latest()->limit(10)->get(),
             'unread_count' => $user->unreadNotifications()->count(),
-            'notifications' => $notifications,
         ]);
     }
 
-    public function markAsRead(string $id, Request $request): JsonResponse
+    public function open(string $id): RedirectResponse
     {
-        $notification = $request->user()->notifications()->findOrFail($id);
-        $notification->markAsRead();
+        /** @var User|null $user */
+        $user = Auth::user();
 
-        return response()->json([
-            'success' => true,
-        ]);
+        if (!$user) {
+            abort(403);
+        }
+
+        $notification = $user->notifications()->findOrFail($id);
+
+        if (is_null($notification->read_at)) {
+            $notification->markAsRead();
+        }
+
+        $data = $notification->data;
+
+        if (!empty($data['redirect_url'])) {
+            return redirect()->to($data['redirect_url']);
+        }
+
+        if (($data['type'] ?? null) === 'appointment_request' && !empty($data['request_id'])) {
+            return redirect()->route('staff.appointment-requests.show', $data['request_id']);
+        }
+
+        return redirect()->route('staff.dashboard');
     }
 }

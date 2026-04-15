@@ -126,20 +126,28 @@ Route::middleware(['auth', 'role:staff'])
         Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
         Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
         Route::get('/patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
+
+
+
+
         Route::get('/notifications', [NotificationController::class, 'index'])
     ->name('notifications.index');
 
-Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])
-    ->name('notifications.read');
+Route::get('/notifications/{id}/open', [NotificationController::class, 'open'])
+    ->name('notifications.open');
+
+
+
+
     Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
-Route::get('/messages/{thread}', [MessageController::class, 'show'])->name('messages.show');
-Route::post('/messages/{thread}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+    Route::get('/messages/{thread}', [MessageController::class, 'show'])->name('messages.show');
+    Route::post('/messages/{thread}/reply', [MessageController::class, 'reply'])->name('messages.reply');
 
-Route::post('/patients/{patient}/messages', [MessageController::class, 'storePatientThread'])
+    Route::post('/patients/{patient}/messages', [MessageController::class, 'storePatientThread'])
     ->name('patients.messages.store');
-
-Route::post('/appointment-requests/{appointmentRequest}/messages', [MessageController::class, 'storeGuestRequestThread'])
+    Route::post('/appointment-requests/{appointmentRequest}/messages', [MessageController::class, 'storeGuestRequestThread'])
     ->name('appointment-requests.messages.store');
+
 
     });
 

@@ -7,6 +7,8 @@ use App\Models\AppointmentRequest;
 use App\Models\AppointmentRequestAnswer;
 use App\Models\Service;
 use App\Models\ServiceOption;
+use App\Models\User;
+use App\Notifications\NewAppointmentRequestNotification;
 use App\Services\Booking\BookingAvailabilityService;
 use App\Services\Booking\PhoneNumberService;
 use Carbon\Carbon;
@@ -17,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Throwable;
 
 class BookingController extends Controller
 {
@@ -52,7 +55,7 @@ class BookingController extends Controller
 
         try {
             $normalized = $this->phoneNumberService->normalizePhilippineMobile($contact);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return redirect()
                 ->route('booking.entry')
                 ->withErrors(['contact_number' => $e->getMessage()]);
@@ -127,7 +130,7 @@ class BookingController extends Controller
                 'dentist' => null,
                 'isGuest' => !Auth::check(),
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return back()
                 ->withErrors([
                     'preferred_start_time' => $e->getMessage() ?: 'The selected time slot is no longer available.',
@@ -140,62 +143,92 @@ class BookingController extends Controller
     {
         $data = session('booking.review_data');
 
-        if (!$data) {
+        if (!$data || !is_array($data)) {
             return redirect()
-                ->route('booking.entry')
-                ->with('error', 'Booking session expired. Please fill out the form again.');
+                ->route(Auth::check() ? 'booking.create' : 'booking.entry')
+                ->withErrors([
+                    'booking' => 'Your booking session has expired. Please review your booking again.',
+                ]);
         }
 
-        $requestCode = 'REQ-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(5));
+        $requestCode = 'REQ-' . now()->format('YmdHis') . '-' . Str::upper(Str::random(5));
 
         try {
-            DB::transaction(function () use ($data, $requestCode) {
-                $service = Service::query()->lockForUpdate()->findOrFail($data['service_id']);
+            $service = Service::query()->findOrFail((int) $data['service_id']);
 
-                $preferredStartTime = $this->normalizeTimeValue($data['preferred_start_time']);
-                $preferredEndTime = $this->computeEndTime(
+            $preferredStartTime = $this->normalizeTimeValue($data['preferred_start_time']);
+            $preferredEndTime = !empty($data['preferred_end_time'])
+                ? $this->normalizeTimeValue($data['preferred_end_time'])
+                : $this->computeEndTime(
                     $data['preferred_date'],
                     $preferredStartTime,
                     (int) $service->estimated_duration_minutes
                 );
 
-                // Revalidate again inside transaction in clinic-only mode.
-                $this->ensureSlotIsStillAvailable(
-                    $data['preferred_date'],
-                    $preferredStartTime,
-                    (int) $data['service_id'],
-                    null
-                );
+            $this->ensureSlotIsStillAvailable(
+                $data['preferred_date'],
+                $preferredStartTime,
+                (int) $data['service_id'],
+                null
+            );
 
-                $patientId = $this->resolvePatientId();
+            $notesPayload = $this->buildNotesPayload(array_merge($data, [
+                'preferred_start_time' => $preferredStartTime,
+                'preferred_end_time' => $preferredEndTime,
+            ]));
 
+            $appointmentRequest = DB::transaction(function () use (
+                $data,
+                $requestCode,
+                $preferredStartTime,
+                $preferredEndTime,
+                $notesPayload
+            ) {
                 $appointmentRequest = AppointmentRequest::create([
                     'request_code' => $requestCode,
-                    'patient_id' => $patientId,
-                    'guest_first_name' => $data['guest_first_name'] ?? null,
-                    'guest_middle_name' => $data['guest_middle_name'] ?? null,
-                    'guest_last_name' => $data['guest_last_name'] ?? null,
-                    'guest_contact_number' => $data['guest_contact_number'] ?? null,
-                    'guest_email' => $data['guest_email'] ?? null,
-                    'preferred_dentist_id' => null,
-                    'service_id' => $data['service_id'],
+                    'patient_id' => $this->resolvePatientId(),
+                    'service_id' => (int) $data['service_id'],
                     'preferred_date' => $data['preferred_date'],
                     'preferred_start_time' => $preferredStartTime,
-                    'notes' => $this->buildNotesPayload([
-                        ...$data,
-                        'preferred_end_time' => $preferredEndTime,
-                        'preferred_dentist_id' => null,
-                    ]),
+                    'preferred_end_time' => $preferredEndTime,
                     'request_status' => 'pending',
+                    'notes' => $notesPayload,
+
+                    // Guest / public capture
+                    'guest_first_name' => $data['first_name'] ?? null,
+                    'guest_middle_name' => $data['middle_name'] ?? null,
+                    'guest_last_name' => $data['last_name'] ?? null,
+                    'guest_sex' => $data['sex'] ?? null,
+                    'guest_birth_date' => $data['birth_date'] ?? null,
+                    'guest_contact_number' => $data['contact_number'] ?? null,
+                    'guest_email' => $data['email'] ?? null,
+                    'guest_address' => $data['address_line'] ?? ($data['address'] ?? null),
                 ]);
 
-                $this->saveAppointmentAnswers($appointmentRequest->request_id, $data['answers'] ?? []);
+                $this->saveAppointmentAnswers(
+                    $appointmentRequest->request_id,
+                    $data['answers'] ?? []
+                );
+
+                return $appointmentRequest;
             });
+
+            $staffUsers = User::query()
+                ->whereHas('role', function ($query) {
+                    $query->where('role_name', 'staff');
+                })
+                ->get();
+
+            foreach ($staffUsers as $staff) {
+                $staff->notify(new NewAppointmentRequestNotification($appointmentRequest));
+            }
 
             session()->forget('booking.review_data');
 
-            return redirect()->route('booking.success', ['requestCode' => $requestCode]);
-        } catch (\Throwable $e) {
+            return redirect()->route('booking.success', [
+                'requestCode' => $requestCode,
+            ]);
+        } catch (Throwable $e) {
             return redirect()
                 ->route(Auth::check() ? 'booking.create' : 'booking.entry')
                 ->withErrors([
@@ -251,24 +284,24 @@ class BookingController extends Controller
     }
 
     public function availableSlots(Request $request): JsonResponse
-{
-    $validated = $request->validate([
-        'date' => ['required', 'date'],
-        'service_id' => ['required', 'integer', 'exists:services,service_id'],
-        'dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
-    ]);
+    {
+        $validated = $request->validate([
+            'date' => ['required', 'date'],
+            'service_id' => ['required', 'integer', 'exists:services,service_id'],
+            'dentist_id' => ['nullable', 'integer', 'exists:dentists,dentist_id'],
+        ]);
 
-    $dentistId = $validated['dentist_id'] ?? null;
+        $dentistId = $validated['dentist_id'] ?? null;
 
-    return response()->json([
-        'clinic_hours' => $this->availabilityService->getClinicHoursForDate($validated['date']),
-        'available_slots' => $this->availabilityService->getAvailableSlots(
-            $validated['date'],
-            (int) $validated['service_id'],
-            $dentistId ? (int) $dentistId : null
-        ),
-    ]);
-}
+        return response()->json([
+            'clinic_hours' => $this->availabilityService->getClinicHoursForDate($validated['date']),
+            'available_slots' => $this->availabilityService->getAvailableSlots(
+                $validated['date'],
+                (int) $validated['service_id'],
+                $dentistId ? (int) $dentistId : null
+            ),
+        ]);
+    }
 
     public function calendarAvailability(Request $request): JsonResponse
     {
@@ -305,10 +338,10 @@ class BookingController extends Controller
     {
         try {
             return Carbon::createFromFormat('H:i', $time)->format('H:i:s');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             try {
                 return Carbon::createFromFormat('H:i:s', $time)->format('H:i:s');
-            } catch (\Throwable $e2) {
+            } catch (Throwable $e2) {
                 throw new \InvalidArgumentException('Invalid appointment time format.');
             }
         }

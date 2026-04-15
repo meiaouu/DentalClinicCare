@@ -86,86 +86,87 @@ class AppointmentController extends Controller
     }
 
     public function store(StoreStaffAppointmentRequest $request): RedirectResponse
-    {
-        $staffUser = auth()->user();
+{
+    /** @var \App\Models\User|null $staffUser */
+    $staffUser = \Illuminate\Support\Facades\Auth::user();
 
-        if (!$staffUser) {
-            return back()->withErrors([
-                'auth' => 'Authenticated staff user not found.',
-            ]);
-        }
-
-        $serviceId = (int) $request->input('service_id');
-        $patientId = (int) $request->input('patient_id');
-        $dentistId = (int) $request->input('dentist_id');
-        $appointmentDate = $request->input('appointment_date');
-        $startTime = $request->input('start_time');
-        $remarks = $request->input('remarks');
-
-        if (!$startTime) {
-            return back()->withErrors([
-                'start_time' => 'Please select an available time slot.',
-            ])->withInput();
-        }
-
-        $service = Service::query()->findOrFail($serviceId);
-
-        $start = Carbon::parse($appointmentDate . ' ' . $startTime);
-        $duration = max(1, (int) ($service->estimated_duration_minutes ?? 30));
-        $end = $start->copy()->addMinutes($duration);
-
-        $availableSlots = $this->availabilityService->getAvailableSlots(
-            $appointmentDate,
-            $serviceId,
-            $dentistId
-        );
-
-        $isValidSlot = collect($availableSlots)->contains(function ($slot) use ($start) {
-            return ($slot['start_time'] ?? null) === $start->format('H:i:s');
-        });
-
-        if (!$isValidSlot) {
-            return back()->withErrors([
-                'schedule' => 'Selected time is not available or already booked.',
-            ])->withInput();
-        }
-
-        DB::transaction(function () use (
-            $staffUser,
-            $service,
-            $serviceId,
-            $patientId,
-            $dentistId,
-            $appointmentDate,
-            $start,
-            $end,
-            $duration,
-            $remarks
-        ) {
-            Appointment::create([
-                'appointment_code' => 'APT-' . now()->format('YmdHis'),
-                'request_id' => null,
-                'patient_id' => $patientId,
-                'dentist_id' => $dentistId,
-                'service_id' => $serviceId,
-                'appointment_date' => $appointmentDate,
-                'start_time' => $start->format('H:i:s'),
-                'end_time' => $end->format('H:i:s'),
-                'estimated_duration_minutes' => $duration,
-                'estimated_price' => $service->estimated_price ?? 0,
-                'status' => 'confirmed',
-                'arrival_status' => 'pending',
-                'grace_period_minutes' => 30,
-                'booked_by' => $staffUser->user_id,
-                'confirmed_by' => $staffUser->user_id,
-                'remarks' => filled($remarks) ? $remarks : null,
-            ]);
-        });
-
-        return redirect()
-            ->route('staff.appointments.index')
-            ->with('success', 'Appointment created successfully.');
+    if (!$staffUser) {
+        return back()->withErrors([
+            'auth' => 'Authenticated staff user not found.',
+        ]);
     }
+
+    $serviceId = (int) $request->input('service_id');
+    $patientId = (int) $request->input('patient_id');
+    $dentistId = (int) $request->input('dentist_id');
+    $appointmentDate = (string) $request->input('appointment_date');
+    $startTime = (string) $request->input('start_time');
+    $remarks = $request->input('remarks');
+
+    if ($startTime === '') {
+        return back()->withErrors([
+            'start_time' => 'Please select an available time slot.',
+        ])->withInput();
+    }
+
+    $service = Service::query()->findOrFail($serviceId);
+
+    $start = Carbon::parse($appointmentDate . ' ' . $startTime);
+    $duration = max(1, (int) ($service->estimated_duration_minutes ?? 30));
+    $end = $start->copy()->addMinutes($duration);
+
+    $availableSlots = $this->availabilityService->getAvailableSlots(
+        $appointmentDate,
+        $serviceId,
+        $dentistId
+    );
+
+    $isValidSlot = collect($availableSlots)->contains(function ($slot) use ($start) {
+        return ($slot['start_time'] ?? null) === $start->format('H:i:s');
+    });
+
+    if (!$isValidSlot) {
+        return back()->withErrors([
+            'schedule' => 'Selected time is not available or already booked.',
+        ])->withInput();
+    }
+
+    $appointment = DB::transaction(function () use (
+        $staffUser,
+        $service,
+        $serviceId,
+        $patientId,
+        $dentistId,
+        $appointmentDate,
+        $start,
+        $end,
+        $duration,
+        $remarks
+    ) {
+        return Appointment::create([
+            'appointment_code' => 'APT-' . now()->format('YmdHis'),
+            'request_id' => null,
+            'patient_id' => $patientId,
+            'dentist_id' => $dentistId,
+            'service_id' => $serviceId,
+            'appointment_date' => $appointmentDate,
+            'start_time' => $start->format('H:i:s'),
+            'end_time' => $end->format('H:i:s'),
+            'estimated_duration_minutes' => $duration,
+            'estimated_price' => $service->estimated_price ?? 0,
+            'status' => 'confirmed',
+            'arrival_status' => 'pending',
+            'grace_period_minutes' => 30,
+            'booked_by' => $staffUser->user_id,
+            'confirmed_by' => $staffUser->user_id,
+            'remarks' => filled($remarks) ? $remarks : null,
+        ]);
+    });
+
+    return redirect()
+        ->route('staff.appointments.index')
+        ->with('success', 'Appointment created successfully.');
+}
 
     public function show(Appointment $appointment): View
     {

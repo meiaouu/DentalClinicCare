@@ -7,6 +7,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+
 class User extends Authenticatable
 {
     use Notifiable;
@@ -48,4 +49,6 @@ class User extends Authenticatable
 {
     return $this->hasOne(\App\Models\Dentist::class, 'user_id', 'user_id');
 }
+
+
 }
