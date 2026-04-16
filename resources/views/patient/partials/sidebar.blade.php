@@ -50,15 +50,22 @@
         gap: 8px;
     }
 
-    .patient-sidebar-link {
+    .patient-sidebar-link,
+    .patient-sidebar-disabled,
+    .patient-sidebar-button {
         display: flex;
         align-items: center;
+        width: 100%;
         min-height: 44px;
         padding: 0 12px;
         border-radius: 12px;
-        text-decoration: none;
         font-size: 14px;
         font-weight: 700;
+        box-sizing: border-box;
+    }
+
+    .patient-sidebar-link {
+        text-decoration: none;
         color: #334155;
         background: #ffffff;
         border: 1px solid #e2e8f0;
@@ -76,14 +83,11 @@
         color: #ffffff;
     }
 
-    .patient-sidebar-link.logout {
-        color: #b91c1c;
-        border-color: #fecaca;
-        background: #fff5f5;
-    }
-
-    .patient-sidebar-link.logout:hover {
-        background: #fef2f2;
+    .patient-sidebar-disabled {
+        color: #94a3b8;
+        background: #f8fafc;
+        border: 1px dashed #dbe2ea;
+        cursor: not-allowed;
     }
 
     .patient-sidebar-form {
@@ -91,17 +95,9 @@
     }
 
     .patient-sidebar-button {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        min-height: 44px;
-        padding: 0 12px;
-        border-radius: 12px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #b91c1c;
-        background: #fff5f5;
         border: 1px solid #fecaca;
+        background: #fff5f5;
+        color: #b91c1c;
         cursor: pointer;
         text-align: left;
     }
@@ -144,35 +140,31 @@
     <div class="patient-sidebar-section">
         <div class="patient-sidebar-label">Appointments</div>
         <div class="patient-sidebar-nav">
-            <a href="#"
-               class="patient-sidebar-link">
+            <div class="patient-sidebar-disabled">
                 My Appointments
-            </a>
+            </div>
 
-            <a href="#"
-               class="patient-sidebar-link">
+            <div class="patient-sidebar-disabled">
                 Appointment Requests
-            </a>
+            </div>
 
-            <a href="#"
-               class="patient-sidebar-link">
+            <div class="patient-sidebar-disabled">
                 Follow-Ups
-            </a>
+            </div>
         </div>
     </div>
 
     <div class="patient-sidebar-section">
         <div class="patient-sidebar-label">Account</div>
         <div class="patient-sidebar-nav">
-            <a href="#"
-               class="patient-sidebar-link">
+            <a href="{{ route('messages.patient.form') }}"
+               class="patient-sidebar-link {{ $currentRoute === 'messages.patient.form' ? 'active' : '' }}">
                 Messages
             </a>
 
-            <a href="#"
-               class="patient-sidebar-link">
+            <div class="patient-sidebar-disabled">
                 Profile
-            </a>
+            </div>
 
             <form method="POST" action="{{ route('logout') }}" class="patient-sidebar-form">
                 @csrf

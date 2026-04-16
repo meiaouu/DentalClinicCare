@@ -7,25 +7,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Message extends Model
 {
-    protected $table = 'messages';
     protected $primaryKey = 'message_id';
 
     protected $fillable = [
-        'thread_id',
-        'sender_user_id',
-        'sender_type',
-        'guest_name',
-        'message_body',
-        'read_at',
-    ];
+    'conversation_id',
+    'sender_user_id',
+    'sender_type',
+    'message_text',
+    'message_body',
+    'is_bot_reply',
+    'read_at',
+    'sent_at',
+];
 
     protected $casts = [
+        'is_bot_reply' => 'boolean',
         'read_at' => 'datetime',
+        'sent_at' => 'datetime',
     ];
 
-    public function thread(): BelongsTo
+    public function conversation(): BelongsTo
     {
-        return $this->belongsTo(MessageThread::class, 'thread_id', 'thread_id');
+        return $this->belongsTo(Conversation::class, 'conversation_id', 'conversation_id');
     }
 
     public function senderUser(): BelongsTo

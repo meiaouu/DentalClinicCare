@@ -2,265 +2,377 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Staff Panel</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ config('app.name', 'Dental Clinic Care') }} - Staff</title>
 </head>
-<body style="margin:0; font-family:system-ui, sans-serif; background:#f8fafc; color:#0f172a;">
+<body style="margin: 0; background: #f8fafc; color: #0f172a; font-family: Arial, Helvetica, sans-serif;">
+    @php
+        $staffNotifications = auth()->check()
+            ? auth()->user()->notifications()->latest()->limit(10)->get()
+            : collect();
 
-@php
-    $notificationsIndexUrl = Route::has('staff.notifications.index')
-        ? route('staff.notifications.index')
-        : '';
+        $staffUnreadCount = auth()->check()
+            ? auth()->user()->unreadNotifications()->count()
+            : 0;
+    @endphp
 
-    $notificationOpenUrlTemplate = Route::has('staff.notifications.open')
-        ? route('staff.notifications.open', ['id' => '__ID__'])
-        : '';
-@endphp
+    <style>
+        * {
+            box-sizing: border-box;
+        }
 
-<div
-    id="notificationConfig"
-    data-index-url="{{ $notificationsIndexUrl }}"
-    data-open-url-template="{{ $notificationOpenUrlTemplate }}"
-    hidden
-></div>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
 
-<div style="display:flex; min-height:100vh;">
-    <aside style="width:250px; background:#ffffff; border-right:1px solid #e2e8f0; flex-shrink:0;">
-        @include('staff.partials.sidebar')
-    </aside>
+        body {
+            background: #f8fafc;
+            color: #0f172a;
+            font-family: Arial, Helvetica, sans-serif;
+            overflow: hidden;
+        }
 
-    <div style="flex:1; min-width:0; display:flex; flex-direction:column;">
-        <header style="height:60px; background:#ffffff; border-bottom:1px solid #e2e8f0; display:flex; align-items:center; justify-content:flex-end; padding:0 20px; position:sticky; top:0; z-index:1000;">
-            <div id="notifWrapper" style="position:relative; z-index:1300;">
-                <button
-                    id="notifBtn"
-                    type="button"
-                    style="
-                        width:40px;
-                        height:40px;
-                        border:1px solid #dbe4ea;
-                        background:#ffffff;
-                        border-radius:8px;
-                        cursor:pointer;
-                        position:relative;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:18px;
-                    "
-                    aria-label="Notifications"
-                >
-                    🔔
-                    <span
-                        id="notifCount"
-                        style="
-                            position:absolute;
-                            top:-6px;
-                            right:-6px;
-                            min-width:18px;
-                            height:18px;
-                            padding:0 5px;
-                            border-radius:999px;
-                            background:#dc2626;
-                            color:#ffffff;
-                            font-size:10px;
-                            line-height:18px;
-                            text-align:center;
-                            font-weight:700;
-                            display:none;
-                        "
-                    >0</span>
-                </button>
+        .staff-shell {
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            background: #f8fafc;
+        }
 
-                <div
-                    id="notifDropdown"
-                    style="
-                        display:none;
-                        position:absolute;
-                        top:46px;
-                        right:0;
-                        width:340px;
-                        background:#ffffff;
-                        border:1px solid #dbe4ea;
-                        border-radius:10px;
-                        box-shadow:0 8px 20px rgba(0,0,0,0.08);
-                        overflow:hidden;
-                        z-index:1400;
-                        pointer-events:auto;
-                    "
-                >
-                    <div style="padding:12px 14px; border-bottom:1px solid #e2e8f0; font-size:14px; font-weight:700;">
-                        Notifications
-                    </div>
+        .staff-shell-sidebar {
+            width: 260px;
+            height: 100vh;
+            background: #ffffff;
+            border-right: 1px solid #e5e7eb;
+            flex-shrink: 0;
+            overflow: hidden;
+            display: flex;
+        }
 
-                    <div id="notifDropdownList" style="max-height:360px; overflow-y:auto;">
-                        <div style="padding:12px 14px; font-size:13px; color:#64748b;">
-                            Loading...
+        .staff-shell-main {
+            min-width: 0;
+            flex: 1;
+            height: 100vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 24px;
+        }
+
+        .staff-topbar {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .staff-topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-left: auto;
+        }
+
+        .staff-notification {
+            position: relative;
+        }
+
+        .staff-notification-btn {
+            border: 1px solid #d1d5db;
+            background: #ffffff;
+            color: #0f172a;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .staff-notification-badge {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            border-radius: 999px;
+            background: #ef4444;
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .staff-notification-menu {
+            position: absolute;
+            top: calc(100% + 10px);
+            right: 0;
+            width: 360px;
+            max-height: 420px;
+            overflow-y: auto;
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(15, 23, 42, 0.10);
+            display: none;
+            z-index: 1000;
+        }
+
+        .staff-notification.open .staff-notification-menu {
+            display: block;
+        }
+
+        .staff-notification-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .staff-notification-list {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .staff-notification-item {
+            display: block;
+            padding: 12px 16px;
+            border-bottom: 1px solid #f1f5f9;
+            text-decoration: none;
+            color: #0f172a;
+            background: #ffffff;
+        }
+
+        .staff-notification-item:hover {
+            background: #f8fafc;
+        }
+
+        .staff-notification-item.unread {
+            background: #f1f5f9;
+        }
+
+        .staff-notification-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .staff-notification-text {
+            font-size: 12px;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        .staff-notification-time {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 6px;
+        }
+
+        .staff-notification-empty {
+            padding: 18px 16px;
+            font-size: 13px;
+            color: #64748b;
+            text-align: center;
+        }
+
+        .staff-user-chip {
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #ecfeff;
+            color: #0f766e;
+            font-size: 12px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .staff-content-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .staff-alert {
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .staff-alert-success {
+            background: #ecfdf5;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .staff-alert-danger {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+
+        .staff-alert-danger ul {
+            margin: 8px 0 0;
+            padding-left: 18px;
+        }
+
+        @media (max-width: 991.98px) {
+            body {
+                overflow: auto;
+            }
+
+            .staff-shell {
+                height: auto;
+                min-height: 100vh;
+                flex-direction: column;
+                overflow: visible;
+            }
+
+            .staff-shell-sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+
+            .staff-shell-main {
+                height: auto;
+                overflow: visible;
+                padding: 16px;
+            }
+
+            .staff-topbar {
+                justify-content: space-between;
+                flex-wrap: wrap;
+            }
+
+            .staff-topbar-right {
+                width: 100%;
+                justify-content: space-between;
+                margin-left: 0;
+            }
+
+            .staff-notification-menu {
+                width: 300px;
+                max-width: calc(100vw - 32px);
+                right: 0;
+            }
+        }
+    </style>
+
+    <div class="staff-shell">
+        <div class="staff-shell-sidebar">
+            @include('staff.partials.sidebar')
+        </div>
+
+        <main class="staff-shell-main">
+            <div class="staff-topbar">
+                <div class="staff-topbar-right">
+                    <div class="staff-notification" id="staffNotification">
+                        <button type="button" class="staff-notification-btn" id="staffNotificationBtn">
+                            Notifications
+                            @if($staffUnreadCount > 0)
+                                <span class="staff-notification-badge">{{ $staffUnreadCount }}</span>
+                            @endif
+                        </button>
+
+                        <div class="staff-notification-menu" id="staffNotificationMenu">
+                            <div class="staff-notification-header">Notifications</div>
+
+                            @if($staffNotifications->isEmpty())
+                                <div class="staff-notification-empty">
+                                    No notifications available.
+                                </div>
+                            @else
+                                <div class="staff-notification-list">
+                                    @foreach($staffNotifications as $notification)
+                                        @php
+                                            $data = $notification->data ?? [];
+                                            $targetUrl = $data['redirect_url'] ?? route('staff.dashboard');
+                                        @endphp
+
+                                        <a href="{{ route('staff.notifications.open', $notification->id) }}"
+                                           class="staff-notification-item {{ is_null($notification->read_at) ? 'unread' : '' }}">
+                                            <div class="staff-notification-title">
+                                                {{ $data['title'] ?? 'Notification' }}
+                                            </div>
+                                            <div class="staff-notification-text">
+                                                {{ $data['message'] ?? 'You have a new notification.' }}
+                                            </div>
+                                            <div class="staff-notification-time">
+                                                {{ $notification->created_at?->diffForHumans() }}
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endif
                         </div>
                     </div>
+
+                    <span class="staff-user-chip">
+                        {{ auth()->user()->first_name ?? '' }} {{ auth()->user()->last_name ?? '' }}
+                    </span>
                 </div>
             </div>
-        </header>
 
-        <main style="flex:1; padding:24px; min-width:0;">
-            @yield('content')
+            @if(session('success'))
+                <div class="staff-alert staff-alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if($errors->any())
+                <div class="staff-alert staff-alert-danger">
+                    <strong>Please fix the following:</strong>
+                    <ul>
+                        @foreach($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <div class="staff-content-card">
+                @hasSection('staff_content')
+                    @yield('staff_content')
+                @else
+                    @yield('content')
+                @endif
+            </div>
         </main>
     </div>
-</div>
 
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    const configEl = document.getElementById('notificationConfig');
-    const btn = document.getElementById('notifBtn');
-    const dropdown = document.getElementById('notifDropdown');
-    const dropdownList = document.getElementById('notifDropdownList');
-    const count = document.getElementById('notifCount');
+    <script>
+        (function () {
+            const wrapper = document.getElementById('staffNotification');
+            const button = document.getElementById('staffNotificationBtn');
 
-    const notificationsIndexUrl = configEl?.dataset.indexUrl || '';
-    const notificationOpenUrlTemplate = configEl?.dataset.openUrlTemplate || '';
+            if (!wrapper || !button) return;
 
-    if (!btn || !dropdown || !dropdownList || !count || !notificationsIndexUrl || !notificationOpenUrlTemplate) {
-        console.error('Notification config incomplete.');
-        return;
-    }
+            button.addEventListener('click', function (event) {
+                event.stopPropagation();
+                wrapper.classList.toggle('open');
+            });
 
-    btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-    });
-
-    dropdown.addEventListener('click', function (e) {
-        e.stopPropagation();
-    });
-
-    document.addEventListener('click', function (e) {
-        const wrapper = document.getElementById('notifWrapper');
-
-        if (!wrapper) {
-            return;
-        }
-
-        if (!wrapper.contains(e.target)) {
-            dropdown.style.display = 'none';
-        }
-    });
-
-    function escapeHtml(value) {
-        return String(value ?? '')
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    function formatTime(value) {
-        if (!value) return '';
-
-        const date = new Date(value);
-        if (isNaN(date.getTime())) return value;
-
-        return date.toLocaleString([], {
-            month: 'short',
-            day: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit'
-        });
-    }
-
-    function renderEmpty(message) {
-        dropdownList.innerHTML = `
-            <div style="padding:12px 14px; font-size:13px; color:#64748b;">
-                ${escapeHtml(message)}
-            </div>
-        `;
-    }
-
-    async function loadNotifications() {
-        try {
-            const res = await fetch(notificationsIndexUrl, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
+            document.addEventListener('click', function (event) {
+                if (!wrapper.contains(event.target)) {
+                    wrapper.classList.remove('open');
                 }
             });
-
-            if (!res.ok) {
-                throw new Error('Failed to load notifications.');
-            }
-
-            const data = await res.json();
-            const unreadCount = Number(data.unread_count || 0);
-
-            count.innerText = unreadCount > 99 ? '99+' : unreadCount;
-            count.style.display = unreadCount > 0 ? 'inline-block' : 'none';
-
-            dropdownList.innerHTML = '';
-
-            if (!Array.isArray(data.notifications) || data.notifications.length === 0) {
-                renderEmpty('No notifications yet.');
-                return;
-            }
-
-            data.notifications.forEach(function (n) {
-                const openUrl = notificationOpenUrlTemplate.replace('__ID__', encodeURIComponent(n.id));
-
-                const item = document.createElement('a');
-                item.href = openUrl;
-                item.style.display = 'block';
-                item.style.width = '100%';
-                item.style.padding = '12px 14px';
-                item.style.textAlign = 'left';
-                item.style.cursor = 'pointer';
-                item.style.background = n.read_at ? '#ffffff' : '#f1f5f9';
-                item.style.borderBottom = '1px solid #e2e8f0';
-                item.style.boxSizing = 'border-box';
-                item.style.textDecoration = 'none';
-
-                const title = escapeHtml(n.data?.title || 'Notification');
-                const message = escapeHtml(n.data?.message || '');
-                const type = escapeHtml(n.data?.type || 'general');
-                const time = escapeHtml(formatTime(n.created_at));
-
-                item.innerHTML = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
-                        <div style="flex:1; min-width:0;">
-                            <div style="font-size:13px; font-weight:700; color:#0f172a; margin-bottom:3px;">
-                                ${title}
-                            </div>
-                            <div style="font-size:12px; color:#475569; line-height:1.5; margin-bottom:6px;">
-                                ${message}
-                            </div>
-                            <div style="font-size:11px; color:#94a3b8;">
-                                ${type} • ${time}
-                            </div>
-                        </div>
-                        ${!n.read_at ? `
-                            <span style="
-                                width:8px;
-                                height:8px;
-                                border-radius:999px;
-                                background:#64748b;
-                                margin-top:4px;
-                                flex-shrink:0;
-                            "></span>
-                        ` : ''}
-                    </div>
-                `;
-
-                dropdownList.appendChild(item);
-            });
-        } catch (error) {
-            console.error(error);
-            renderEmpty('Unable to load notifications.');
-        }
-    }
-
-    loadNotifications();
-    setInterval(loadNotifications, 20000);
-});
-</script>
-
+        })();
+    </script>
 </body>
 </html>

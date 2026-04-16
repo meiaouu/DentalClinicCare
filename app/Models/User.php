@@ -41,10 +41,10 @@ class User extends Authenticatable
     return $this->belongsTo(Role::class, 'role_id', 'role_id');
 }
 
-    public function patient(): HasOne
-    {
-        return $this->hasOne(Patient::class, 'user_id', 'user_id');
-    }
+    public function patient()
+{
+    return $this->hasOne(\App\Models\Patient::class, 'user_id', 'user_id');
+}
     public function dentist()
 {
     return $this->hasOne(\App\Models\Dentist::class, 'user_id', 'user_id');

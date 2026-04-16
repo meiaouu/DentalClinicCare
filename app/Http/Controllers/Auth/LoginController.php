@@ -35,7 +35,9 @@ class LoginController extends Controller
             $request->session()->regenerate();
             $request->session()->forget('url.intended');
 
-            return redirect()->to($this->resolveRedirectTarget($validated['redirect'] ?? null));
+            return redirect()->to(
+                $this->resolveRedirectTarget($validated['redirect'] ?? null)
+            );
         }
 
         return back()
@@ -97,10 +99,12 @@ class LoginController extends Controller
 
         $roleName = strtolower(trim(Auth::user()?->role?->role_name ?? ''));
 
+        // Internal users should always go to their own dashboards
         if (in_array($roleName, ['admin', 'staff', 'dentist'], true)) {
             return $roleRedirect;
         }
 
+        // Patients may still go to a safe requested page if one was supplied
         return $requestedRedirect;
     }
 
@@ -119,10 +123,10 @@ class LoginController extends Controller
         $roleName = strtolower(trim($user?->role?->role_name ?? ''));
 
         return match ($roleName) {
-            'admin' => route('staff.dashboard'),
+            'admin' => route('admin.dashboard'),
             'staff' => route('staff.dashboard'),
-            'dentist' => route('home'),
-            'patient' => route('booking.create'),
+            'dentist' => route('dentist.dashboard'),
+            'patient' => route('patient.dashboard'),
             default => route('home'),
         };
     }

@@ -18,6 +18,11 @@ return [
         'key' => env('POSTMARK_API_KEY'),
     ],
 
+   'openai' => [
+    'key' => env('OPENAI_API_KEY'),
+    'model' => env('OPENAI_MODEL', 'gpt-5.4-mini'),
+],
+
     'resend' => [
         'key' => env('RESEND_API_KEY'),
     ],
