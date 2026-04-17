@@ -4,408 +4,360 @@
 <style>
     .booking-page {
         min-height: 100vh;
-        background:
-            radial-gradient(circle at top right, rgba(15, 157, 138, 0.08), transparent 26%),
-            linear-gradient(180deg, #f8fafc 0%, #f3f4f6 100%);
-        padding: 42px 16px 72px;
+        background: #f3f4f6;
+        padding: 24px 12px 40px;
     }
 
     .booking-container {
-        max-width: 1120px;
+        max-width: 1000px;
         margin: 0 auto;
     }
 
     .booking-header {
         text-align: center;
-        margin-bottom: 30px;
+        margin-bottom: 20px;
     }
 
     .booking-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        padding: 8px 14px;
-        border-radius: 999px;
-        background: #ecfdf5;
-        color: #0f766e;
-        font-size: 13px;
-        font-weight: 800;
-        border: 1px solid #d1fae5;
-        margin-bottom: 14px;
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        background: #e5e7eb;
+        color: #374151;
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 10px;
     }
 
     .booking-badge-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 999px;
-        background: #10b981;
-        display: inline-block;
+        display: none;
     }
 
     .booking-title {
-        margin: 0 0 10px;
-        font-size: clamp(30px, 4vw, 42px);
-        font-weight: 900;
-        color: #0b0f13;
-        line-height: 1.1;
-        letter-spacing: -0.02em;
+        margin: 0 0 8px;
+        font-size: 28px;
+        font-weight: bold;
+        color: #111827;
+        line-height: 1.2;
     }
 
     .booking-subtitle {
         margin: 0 auto;
-        max-width: 760px;
+        max-width: 650px;
         color: #6b7280;
-        font-size: 15px;
-        line-height: 1.8;
+        font-size: 14px;
+        line-height: 1.6;
     }
 
     .booking-stepper {
         display: flex;
         justify-content: center;
         align-items: center;
-        gap: 12px;
-        margin-top: 26px;
+        gap: 10px;
+        margin-top: 18px;
         flex-wrap: wrap;
     }
 
     .booking-step {
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 8px;
     }
 
     .booking-step-circle {
-        width: 42px;
-        height: 42px;
-        border-radius: 999px;
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
-        font-weight: 800;
-        border: 2px solid #d1d5db;
+        font-size: 13px;
+        font-weight: bold;
+        border: 1px solid #cbd5e1;
         background: #ffffff;
         color: #6b7280;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.03);
     }
 
     .booking-step-circle.active {
-        background: #0f9d8a;
-        border-color: #0f9d8a;
+        background: #0f766e;
+        border-color: #0f766e;
         color: #ffffff;
-        box-shadow: 0 8px 18px rgba(15, 157, 138, 0.20);
     }
 
     .booking-step-line {
-        width: 68px;
-        height: 2px;
-        background: #dbe4ea;
-        border-radius: 999px;
+        width: 32px;
+        height: 1px;
+        background: #cbd5e1;
     }
 
     .booking-step-label {
-        font-size: 14px;
-        font-weight: 700;
+        font-size: 13px;
+        font-weight: 600;
         color: #4b5563;
     }
 
     .booking-card {
         background: #ffffff;
-        border: 1px solid #e5e7eb;
-        border-radius: 28px;
-        padding: 28px;
-        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.07);
+        border: 1px solid #d1d5db;
+        border-radius: 10px;
+        padding: 18px;
     }
 
     .booking-section {
-        border: 1px solid #e5e7eb;
-        border-radius: 22px;
-        padding: 22px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 16px;
         background: #ffffff;
     }
 
     .booking-section + .booking-section {
-        margin-top: 22px;
+        margin-top: 16px;
     }
 
     .booking-section-head {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        gap: 12px;
-        margin-bottom: 18px;
-        padding-bottom: 14px;
-        border-bottom: 1px solid #eef2f7;
+        gap: 10px;
+        margin-bottom: 14px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #e5e7eb;
     }
 
     .booking-section-title-wrap {
         display: flex;
         align-items: center;
-        gap: 12px;
+        gap: 10px;
     }
 
     .booking-section-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 14px;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        background: #ecfdf5;
-        color: #0f9d8a;
-        font-weight: 900;
-        font-size: 16px;
-        border: 1px solid #d1fae5;
+        background: #e5e7eb;
+        color: #111827;
+        font-weight: bold;
+        font-size: 14px;
         flex-shrink: 0;
     }
 
     .booking-section-title {
         margin: 0;
-        font-size: 19px;
-        font-weight: 900;
+        font-size: 18px;
+        font-weight: bold;
         color: #111827;
         line-height: 1.2;
     }
 
     .booking-section-subtitle {
-        margin: 4px 0 0;
+        margin: 3px 0 0;
         font-size: 13px;
         color: #6b7280;
         line-height: 1.5;
     }
 
     .booking-section-note {
-        font-size: 12px;
-        font-weight: 800;
-        color: #0f766e;
-        background: #ecfdf5;
-        border-radius: 999px;
-        padding: 7px 12px;
+        font-size: 11px;
+        font-weight: bold;
+        color: #374151;
+        background: #f3f4f6;
+        border-radius: 20px;
+        padding: 6px 10px;
         white-space: nowrap;
-        border: 1px solid #d1fae5;
+        border: 1px solid #d1d5db;
     }
 
     .form-label {
         font-size: 13px;
-        font-weight: 800;
+        font-weight: bold;
         color: #1f2937;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
 
     .form-control,
     .form-select {
-        height: 52px;
-        border-radius: 14px;
-        border: 1px solid #d1d5db;
-        font-size: 15px;
+        height: 44px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
+        font-size: 14px;
         color: #111827;
         box-shadow: none !important;
         background: #ffffff;
     }
 
-    .form-control::placeholder {
-        color: #9ca3af;
-    }
-
     textarea.form-control {
-        min-height: 120px;
+        min-height: 100px;
         height: auto;
-        padding-top: 14px;
+        padding-top: 10px;
         resize: vertical;
     }
 
     .form-control:focus,
     .form-select:focus {
-        border-color: #0f9d8a;
-        box-shadow: 0 0 0 4px rgba(15, 157, 138, 0.10) !important;
+        border-color: #0f766e;
+        box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.10) !important;
     }
 
     .booking-panel,
     .booking-calendar-panel,
     .booking-slot-panel,
     .booking-info-panel {
-        border: 1px solid #e5e7eb;
-        border-radius: 18px;
-        padding: 18px;
-        background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 14px;
+        background: #fafafa;
     }
 
     .booking-panel-title {
         margin: 0 0 8px;
-        font-size: 15px;
-        font-weight: 900;
+        font-size: 14px;
+        font-weight: bold;
         color: #111827;
     }
 
     .booking-panel-text {
-        font-size: 14px;
-        line-height: 1.7;
+        font-size: 13px;
+        line-height: 1.6;
         color: #4b5563;
     }
 
     .booking-info-panel {
         display: flex;
-        gap: 14px;
+        gap: 10px;
         align-items: flex-start;
     }
 
     .booking-info-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 14px;
-        background: #ecfdf5;
-        color: #0f9d8a;
+        width: 32px;
+        height: 32px;
+        border-radius: 6px;
+        background: #e5e7eb;
+        color: #111827;
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        font-weight: 900;
+        font-weight: bold;
         flex-shrink: 0;
-        border: 1px solid #d1fae5;
     }
 
     .calendar-toolbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        margin-bottom: 16px;
-        gap: 10px;
+        margin-bottom: 12px;
+        gap: 8px;
     }
 
     .calendar-month-label {
         margin: 0;
-        font-size: 16px;
-        font-weight: 900;
+        font-size: 15px;
+        font-weight: bold;
         color: #111827;
     }
 
     .calendar-btn {
-        width: 40px;
-        height: 40px;
-        border-radius: 12px;
-        border: 1px solid #d1d5db;
+        width: 34px;
+        height: 34px;
+        border-radius: 6px;
+        border: 1px solid #cbd5e1;
         background: #ffffff;
         color: #374151;
-        font-weight: 900;
-        transition: 0.2s ease;
-    }
-
-    .calendar-btn:hover {
-        border-color: #0f9d8a;
-        color: #0f9d8a;
+        font-weight: bold;
     }
 
     .calendar-weekdays {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
-        margin-bottom: 10px;
+        gap: 6px;
+        margin-bottom: 8px;
         text-align: center;
         font-size: 12px;
-        font-weight: 900;
+        font-weight: bold;
         color: #6b7280;
     }
 
     #bookingCalendarGrid {
         display: grid;
         grid-template-columns: repeat(7, 1fr);
-        gap: 8px;
+        gap: 6px;
     }
 
     #bookingCalendarGrid button {
-        min-height: 46px;
-        border-radius: 12px;
-        font-weight: 800;
-        border: 1px solid #d1d5db;
+        min-height: 40px;
+        border-radius: 6px;
+        font-weight: bold;
+        border: 1px solid #cbd5e1;
         background: #ffffff;
         color: #374151;
-        transition: 0.2s ease;
-    }
-
-    #bookingCalendarGrid button:hover:not(:disabled) {
-        border-color: #0f9d8a;
-        color: #0f9d8a;
     }
 
     #bookingCalendarGrid .btn-primary {
-        background: #0f9d8a !important;
-        border-color: #0f9d8a !important;
+        background: #0f766e !important;
+        border-color: #0f766e !important;
         color: #ffffff !important;
     }
 
     .slot-grid {
         display: grid;
         grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 10px;
+        gap: 8px;
     }
 
     .time-slot-btn {
-        border: 1px solid #dbe4ea;
+        border: 1px solid #cbd5e1;
         background: #ffffff;
-        border-radius: 14px;
-        min-height: 48px;
-        padding: 10px;
-        font-weight: 800;
+        border-radius: 6px;
+        min-height: 42px;
+        padding: 8px;
+        font-weight: bold;
         text-align: center;
         color: #374151;
         cursor: pointer;
-        transition: 0.2s ease;
-        box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-    }
-
-    .time-slot-btn:hover:not(.disabled) {
-        border-color: #0f9d8a;
-        color: #0f9d8a;
-        background: #f0fdfa;
     }
 
     .time-slot-btn.active {
-        background: #0f9d8a;
-        border-color: #0f9d8a;
+        background: #0f766e;
+        border-color: #0f766e;
         color: #ffffff;
-        box-shadow: 0 10px 18px rgba(15,157,138,0.18);
     }
 
     .time-slot-btn.disabled {
-        background: #f9fafb;
+        background: #f3f4f6;
         color: #9ca3af;
         border-color: #e5e7eb;
         cursor: not-allowed;
-        box-shadow: none;
     }
 
     .booking-actions {
         display: flex;
         justify-content: flex-end;
-        margin-top: 28px;
+        margin-top: 22px;
     }
 
     .booking-primary-btn {
-        min-width: 230px;
-        height: 54px;
+        min-width: 180px;
+        height: 46px;
         border: none;
-        border-radius: 16px;
-        background: #0f9d8a;
+        border-radius: 8px;
+        background: #0f766e;
         color: #ffffff;
-        font-size: 15px;
-        font-weight: 900;
-        transition: 0.2s ease;
-        box-shadow: 0 12px 24px rgba(15,157,138,0.20);
-    }
-
-    .booking-primary-btn:hover {
-        background: #0d8574;
+        font-size: 14px;
+        font-weight: bold;
     }
 
     .alert {
-        border-radius: 18px;
+        border-radius: 8px;
         border: 1px solid #fecaca;
         background: #fff5f5;
     }
 
     .form-check {
-        padding: 12px 12px 12px 36px;
-        border: 1px solid #e5edf2;
-        border-radius: 14px;
+        padding: 10px 10px 10px 34px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
         background: #ffffff;
         margin-bottom: 8px;
     }
@@ -422,21 +374,19 @@
 
     @media (max-width: 767.98px) {
         .booking-page {
-            padding: 26px 12px 56px;
+            padding: 18px 10px 30px;
         }
 
         .booking-card {
-            padding: 18px;
-            border-radius: 22px;
+            padding: 14px;
         }
 
         .booking-section {
-            padding: 16px;
-            border-radius: 18px;
+            padding: 12px;
         }
 
         .booking-step-line {
-            width: 34px;
+            width: 20px;
         }
 
         .slot-grid {
@@ -463,7 +413,6 @@
     <div class="booking-container">
         <div class="booking-header">
             <div class="booking-badge">
-                <span class="booking-badge-dot"></span>
                 {{ $isGuest ? 'Guest Appointment Request' : 'Patient Appointment Request' }}
             </div>
 

@@ -1,23 +1,25 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\BookingController;
-use App\Http\Controllers\Staff\AppointmentApprovalController;
+use App\Http\Controllers\PublicMessageController;
+
+use App\Http\Controllers\Patient\DashboardController as PatientDashboardController;
+
+use App\Http\Controllers\Staff\AiController;
 use App\Http\Controllers\Staff\AppointmentController;
 use App\Http\Controllers\Staff\AppointmentRequestController;
 use App\Http\Controllers\Staff\ClinicScheduleController;
 use App\Http\Controllers\Staff\DashboardController as StaffDashboardController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Patient\DashboardController as PatientDashboardController;
-use App\Http\Controllers\Staff\PatientController;
-use App\Http\Controllers\Staff\NotificationController;
 use App\Http\Controllers\Staff\MessageController;
-use App\Http\Controllers\PublicMessageController;
-use App\Http\Controllers\Dentist\ScheduleController as DentistScheduleController;
-use App\Http\Controllers\Staff\MessageController as StaffMessageController;
-use App\Http\Controllers\Staff\AiController;
+use App\Http\Controllers\Staff\NotificationController;
+use App\Http\Controllers\Staff\PatientController;
 
+use App\Http\Controllers\Dentist\AvailabilityController as DentistAvailabilityController;
+use App\Http\Controllers\Dentist\DashboardController as DentistDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -28,12 +30,31 @@ use App\Http\Controllers\Staff\AiController;
 Route::get('/', function () {
     $clinic = \App\Models\ClinicSetting::first();
 
-    $services = \App\Models\Service::where('is_active', true)
+    $services = \App\Models\Service::query()
+        ->where('is_active', true)
         ->orderBy('service_name')
         ->get(['service_id', 'service_name', 'description']);
 
     return view('public.home', compact('clinic', 'services'));
 })->name('home');
+
+/*
+|--------------------------------------------------------------------------
+| Guest Authentication
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware(['guest', 'internal.redirect'])->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
+
+    Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
+});
+
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->middleware('auth')
+    ->name('logout');
 
 /*
 |--------------------------------------------------------------------------
@@ -56,29 +77,7 @@ Route::get('/booking/services/{service}/meta', [BookingController::class, 'servi
 Route::get('/booking/services/{service}/questions', [BookingController::class, 'serviceQuestions'])->name('booking.service.questions');
 Route::get('/booking/available-dentists', [BookingController::class, 'availableDentists'])->name('booking.available.dentists');
 Route::get('/booking/available-slots', [BookingController::class, 'availableSlots'])->name('booking.available.slots');
-Route::get('/booking/calendar-availability', [BookingController::class, 'calendarAvailability'])
-    ->name('booking.calendar.availability');
-
-
-
-
-/*
-|--------------------------------------------------------------------------
-| Guest Authentication
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['guest', 'internal.redirect'])->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login'])->name('login.submit');
-
-    Route::get('/register', [RegisterController::class, 'showRegisterForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register'])->name('register.submit');
-});
-
-Route::post('/logout', [LoginController::class, 'logout'])
-    ->middleware('auth')
-    ->name('logout');
+Route::get('/booking/calendar-availability', [BookingController::class, 'calendarAvailability'])->name('booking.calendar.availability');
 
 /*
 |--------------------------------------------------------------------------
@@ -86,11 +85,14 @@ Route::post('/logout', [LoginController::class, 'logout'])
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function () {
-    Route::get('/dashboard', function () {
-        return view('admin.dashboard');
-    })->name('admin.dashboard');
-});
+Route::middleware(['auth', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        Route::get('/dashboard', function () {
+            return view('admin.dashboard');
+        })->name('dashboard');
+    });
 
 /*
 |--------------------------------------------------------------------------
@@ -104,27 +106,22 @@ Route::middleware(['auth', 'role:staff'])
     ->group(function () {
         Route::get('/dashboard', [StaffDashboardController::class, 'index'])->name('dashboard');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Appointment Requests
+        |--------------------------------------------------------------------------
+        */
         Route::get('/appointment-requests', [AppointmentRequestController::class, 'index'])->name('appointment-requests.index');
         Route::get('/appointment-requests/{appointmentRequest}', [AppointmentRequestController::class, 'show'])->name('appointment-requests.show');
         Route::post('/appointment-requests/{appointmentRequest}/confirm', [AppointmentRequestController::class, 'confirm'])->name('appointment-requests.confirm');
         Route::post('/appointment-requests/{appointmentRequest}/reject', [AppointmentRequestController::class, 'reject'])->name('appointment-requests.reject');
         Route::post('/appointment-requests/{appointmentRequest}/reschedule', [AppointmentRequestController::class, 'reschedule'])->name('appointment-requests.reschedule');
 
-Route::get('/messages', [StaffMessageController::class, 'index'])->name('messages.index');
-        Route::get('/messages/{conversation}', [StaffMessageController::class, 'show'])->name('messages.show');
-        Route::post('/messages/{conversation}/reply', [StaffMessageController::class, 'reply'])->name('messages.reply');
-        Route::get('/messages/{conversation}/fetch', [StaffMessageController::class, 'fetch'])->name('messages.fetch');
-        Route::get('/messages/{conversation}/fetch', [MessageController::class, 'fetch'])
-    ->name('messages.fetch');
-        Route::post('/messages/{conversation}/assign', [StaffMessageController::class, 'assign'])->name('messages.assign');
-
-
-
-
-
-
-
-
+        /*
+        |--------------------------------------------------------------------------
+        | Appointments
+        |--------------------------------------------------------------------------
+        */
         Route::get('/appointments', [AppointmentController::class, 'index'])->name('appointments.index');
         Route::get('/appointments/create', [AppointmentController::class, 'create'])->name('appointments.create');
         Route::post('/appointments', [AppointmentController::class, 'store'])->name('appointments.store');
@@ -137,48 +134,60 @@ Route::get('/messages', [StaffMessageController::class, 'index'])->name('message
         Route::post('/appointments/{appointment}/no-show', [AppointmentController::class, 'markNoShow'])->name('appointments.noshow');
         Route::post('/appointments/{appointment}/cancel', [AppointmentController::class, 'cancel'])->name('appointments.cancel');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Clinic Schedule
+        |--------------------------------------------------------------------------
+        */
         Route::get('/clinic-schedule', [ClinicScheduleController::class, 'index'])->name('clinic-schedule.index');
         Route::post('/clinic-schedule/open-date', [ClinicScheduleController::class, 'openSpecificDate'])->name('clinic-schedule.open-date');
         Route::post('/clinic-schedule/block', [ClinicScheduleController::class, 'blockDateOrTime'])->name('clinic-schedule.block');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Patients
+        |--------------------------------------------------------------------------
+        */
         Route::get('/patients', [PatientController::class, 'index'])->name('patients.index');
         Route::get('/patients/create', [PatientController::class, 'create'])->name('patients.create');
         Route::post('/patients', [PatientController::class, 'store'])->name('patients.store');
         Route::get('/patients/{patient}', [PatientController::class, 'show'])->name('patients.show');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Notifications
+        |--------------------------------------------------------------------------
+        */
+        Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::get('/notifications/{id}/open', [NotificationController::class, 'open'])->name('notifications.open');
 
+        /*
+        |--------------------------------------------------------------------------
+        | Staff Messaging - Conversation Based
+        |--------------------------------------------------------------------------
+        */
+        Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
+        Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
+        Route::get('/messages/{conversation}/fetch', [MessageController::class, 'fetch'])->name('messages.fetch');
+        Route::post('/messages/{conversation}/reply', [MessageController::class, 'reply'])->name('messages.reply');
+        Route::post('/messages/{conversation}/close', [MessageController::class, 'close'])->name('messages.close');
+        Route::post('/messages/{conversation}/reopen', [MessageController::class, 'reopen'])->name('messages.reopen');
+        Route::post('/messages/{conversation}/assign', [MessageController::class, 'assign'])->name('messages.assign');
 
+        Route::post('/patients/{patient}/messages', [MessageController::class, 'storePatientThread'])
+            ->name('patients.messages.store');
 
-        Route::get('/notifications', [NotificationController::class, 'index'])
-    ->name('notifications.index');
+        Route::post('/appointment-requests/{appointmentRequest}/messages', [MessageController::class, 'storeGuestRequestThread'])
+            ->name('appointment-requests.messages.store');
 
-Route::get('/notifications/{id}/open', [NotificationController::class, 'open'])
-    ->name('notifications.open');
-
-
-
-
-    Route::get('/messages', [MessageController::class, 'index'])->name('messages.index');
-
-    Route::get('/messages/{conversation}', [MessageController::class, 'show'])->name('messages.show');
-    Route::post('/messages/{conversation}/reply', [MessageController::class, 'reply'])->name('messages.reply');
-    Route::get('/messages/{conversation}/fetch', [MessageController::class, 'fetch'])->name('messages.fetch');
-    Route::post('/patients/{patient}/messages', [MessageController::class, 'storePatientThread'])
-    ->name('patients.messages.store');
-    Route::post('/appointment-requests/{appointmentRequest}/messages', [MessageController::class, 'storeGuestRequestThread'])
-    ->name('appointment-requests.messages.store');
-   Route::post('/messages/{conversation}/close', [MessageController::class, 'close'])
-    ->name('messages.close');
-   Route::post('/messages/{conversation}/assign', [MessageController::class, 'assign'])->name('messages.assign');
-   Route::post('/messages/{conversation}/reopen', [MessageController::class, 'reopen'])
-    ->name('messages.reopen');
-
-Route::post('/ai/conversations/{conversation}/suggest-reply', [AiController::class, 'suggestReply'])
-    ->name('ai.suggest-reply');
-
-
+        /*
+        |--------------------------------------------------------------------------
+        | AI Suggested Reply
+        |--------------------------------------------------------------------------
+        */
+        Route::post('/ai/conversations/{conversation}/suggest-reply', [AiController::class, 'suggestReply'])
+            ->name('ai.suggest-reply');
     });
-
 
 /*
 |--------------------------------------------------------------------------
@@ -186,21 +195,15 @@ Route::post('/ai/conversations/{conversation}/suggest-reply', [AiController::cla
 |--------------------------------------------------------------------------
 */
 
-use App\Http\Controllers\Dentist\DashboardController as DentistDashboardController;
-use App\Http\Controllers\Dentist\AvailabilityController as DentistAvailabilityController;
-
-
-
-
-
 Route::middleware(['auth', 'role:dentist'])
     ->prefix('dentist')
     ->name('dentist.')
     ->group(function () {
         Route::get('/dashboard', [DentistDashboardController::class, 'index'])->name('dashboard');
 
-      Route::get('/schedule', [DentistScheduleController::class, 'index'])
-    ->name('schedule.index');
+        Route::get('/schedule', function () {
+            return view('dentist.schedule.index');
+        })->name('schedule.index');
 
         Route::get('/patients/today', function () {
             return view('dentist.patients.today');
@@ -239,20 +242,11 @@ Route::middleware(['auth', 'role:dentist'])
             ->name('availability.date-override.destroy');
     });
 
-
-
-
-
-
-
-
 /*
 |--------------------------------------------------------------------------
 | Patient
 |--------------------------------------------------------------------------
 */
-
-
 
 Route::middleware(['auth', 'role:patient'])
     ->prefix('patient')
@@ -261,115 +255,49 @@ Route::middleware(['auth', 'role:patient'])
         Route::get('/dashboard', [PatientDashboardController::class, 'index'])->name('dashboard');
     });
 
+/*
+|--------------------------------------------------------------------------
+| Patient Messaging
+|--------------------------------------------------------------------------
+*/
 
-Route::middleware('internal.redirect')->group(function () {
-
-    Route::get('/', function () {
-        $clinic = \App\Models\ClinicSetting::first();
-
-        $services = \App\Models\Service::where('is_active', true)
-            ->orderBy('service_name')
-            ->get(['service_id', 'service_name', 'description']);
-
-        return view('public.home', compact('clinic', 'services'));
-    })->name('home');
-
-    Route::get('/book', [BookingController::class, 'entry'])->name('booking.entry');
-    Route::get('/book/guest', [BookingController::class, 'guestForm'])->name('booking.guest.form');
-
+Route::middleware(['auth', 'role:patient'])->group(function () {
+    Route::get('/messages/patient', [PublicMessageController::class, 'patientForm'])->name('messages.patient.form');
+    Route::post('/messages/patient', [PublicMessageController::class, 'patientSend'])->name('messages.patient.send');
+    Route::get('/messages/patient/fetch', [PublicMessageController::class, 'patientFetch'])->name('messages.patient.fetch');
 });
-
-
-
-
-
-
-
-
-
-
-
-
 
 /*
 |--------------------------------------------------------------------------
-| Messaging
+| Guest Chat Widget
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth')->group(function () {
-    Route::get('/messages/patient', [PublicMessageController::class, 'patientForm'])
-        ->name('messages.patient.form');
-    Route::post('/messages/patient', [PublicMessageController::class, 'patientSend'])
-        ->name('messages.patient.send');
-    Route::get('/messages/patient/fetch', [PublicMessageController::class, 'patientFetch'])
-        ->name('messages.patient.fetch');
-});
 
-Route::get('/messages/guest/{requestCode}', [PublicMessageController::class, 'guestForm'])
-    ->name('messages.guest.form');
-Route::post('/messages/guest/{requestCode}', [PublicMessageController::class, 'guestSend'])
-    ->name('messages.guest.send');
-Route::get('/messages/guest/{requestCode}/fetch', [PublicMessageController::class, 'guestFetch'])
-    ->name('messages.guest.fetch');
+Route::post('/chat/widget/start', [PublicMessageController::class, 'widgetStart'])->name('chat.widget.start');
+Route::post('/chat/widget/send', [PublicMessageController::class, 'widgetSend'])->name('chat.widget.send');
+Route::get('/chat/widget/fetch', [PublicMessageController::class, 'widgetFetch'])->name('chat.widget.fetch');
+
+/*
+|--------------------------------------------------------------------------
+| Legacy Guest Message Tracking
+|--------------------------------------------------------------------------
+| Keep only if your guest message page still exists in your views/controller.
+|--------------------------------------------------------------------------
+*/
 
 Route::get('/messages/guest/{requestCode}', [PublicMessageController::class, 'guestForm'])->name('messages.guest.form');
 Route::post('/messages/guest/{requestCode}', [PublicMessageController::class, 'guestSend'])->name('messages.guest.send');
 
-
-
-
-
-
-
-
-
-Route::get('/chat/guest', [PublicMessageController::class, 'guestBotForm'])
-    ->name('chat.guest.form');
-
-Route::post('/chat/guest/start', [PublicMessageController::class, 'guestBotStart'])
-    ->name('chat.guest.start');
-
-Route::post('/chat/guest/send', [PublicMessageController::class, 'guestBotSend'])
-    ->name('chat.guest.send');
-
-Route::get('/chat/guest/fetch/{conversation}', [PublicMessageController::class, 'guestBotFetch'])
-    ->name('chat.guest.fetch');
-
-
-
-
-
-    /*
+/*
 |--------------------------------------------------------------------------
-| AI
+| Utility
 |--------------------------------------------------------------------------
 */
-
-
-
-
-
-
-
 
 Route::get('/force-logout', function () {
     \Illuminate\Support\Facades\Auth::logout();
     session()->invalidate();
     session()->regenerateToken();
+
     return redirect('/');
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

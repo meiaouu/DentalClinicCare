@@ -243,10 +243,30 @@
 
     <div class="mainbar">
         <div class="mainbar-inner">
-            <a href="{{ route('home') }}" class="brand-link">
-                <span class="brand-icon">D</span>
-                <span class="brand-name">{{ $clinic?->clinic_name ?? 'Dr Brendalyn Wansi Calacat' }}</span>
-            </a>
+           <div style="display:flex; align-items:center; gap:10px;">
+
+    <!-- TOOTH ICON -->
+    <svg width="33" height="33" viewBox="0 0 64 64" fill="none" stroke="#0f172a" stroke-width="2">
+        <path d="M20 10C12 10 8 16 10 24C12 32 16 50 22 50C26 50 26 40 32 40C38 40 38 50 42 50C48 50 52 32 54 24C56 16 52 10 44 10C40 10 36 12 32 14C28 12 24 10 20 10Z"/>
+    </svg>
+
+    <!-- DIVIDER -->
+    <div style="width:1px; height:32px; background:#0f172a;"></div>
+
+    <!-- TEXT -->
+    <div style="line-height:1.1;">
+        <div style="font-size:13px; font-weight:600; color:#374151;">
+            Dr. Brendalyn Wansi Calacat
+        </div>
+
+        <div style="font-size:17px; font-weight:800; color:#111827;">
+            Dental Clinic
+        </div>
+
+        <div style="font-size:10px; color:#6b7280;">
+            Personalized Care
+        </div>
+    </div>
 
             <a href="{{ route('booking.entry') }}" class="book-btn">
                 Book an Appointment

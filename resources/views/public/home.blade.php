@@ -200,158 +200,419 @@
         </div>
     </section>
 
-<!-- CHAT BUTTON -->
-<div id="chatToggle" style="
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    background:#0f9d8a;
-    color:#fff;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    font-weight:bold;
-    cursor:pointer;
-    z-index:999;
-">
+<style>
+    .clinic-chat-toggle {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        width: 74px;
+        height: 74px;
+        border-radius: 999px;
+        border: none;
+        background: #14b8a6;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 800;
+        cursor: pointer;
+        box-shadow: 0 10px 25px rgba(15, 23, 42, 0.18);
+        z-index: 9999;
+    }
+
+    .clinic-chat-widget {
+        position: fixed;
+        right: 22px;
+        bottom: 108px;
+        width: 420px;
+        max-width: calc(100vw - 24px);
+        height: 560px;
+        background: #ffffff;
+        border: 1px solid #dbe2ea;
+        border-radius: 18px;
+        box-shadow: 0 20px 50px rgba(15, 23, 42, 0.18);
+        overflow: hidden;
+        display: none;
+        flex-direction: column;
+        z-index: 9998;
+    }
+
+    .clinic-chat-header {
+        background: #14b8a6;
+        color: #ffffff;
+        padding: 16px 18px;
+        font-size: 17px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .clinic-chat-close {
+        border: none;
+        background: transparent;
+        color: #ffffff;
+        font-size: 24px;
+        cursor: pointer;
+        line-height: 1;
+    }
+
+    .clinic-chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px;
+        background: #f8fafc;
+    }
+
+    .clinic-chat-row {
+        display: flex;
+        margin-bottom: 10px;
+    }
+
+    .clinic-chat-row.guest {
+        justify-content: flex-end;
+    }
+
+    .clinic-chat-row.bot {
+        justify-content: flex-start;
+    }
+
+    .clinic-chat-bubble {
+        max-width: 78%;
+        padding: 10px 12px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.5;
+    }
+
+    .clinic-chat-bubble.guest {
+        background: #14b8a6;
+        color: #ffffff;
+        border: 1px solid #14b8a6;
+    }
+
+    .clinic-chat-bubble.bot {
+        background: #ffffff;
+        color: #0f172a;
+        border: 1px solid #dbe2ea;
+    }
+
+    .clinic-chat-label {
+        font-size: 11px;
+        font-weight: 700;
+        margin-bottom: 4px;
+        opacity: 0.85;
+    }
+
+    .clinic-chat-time {
+        font-size: 11px;
+        margin-top: 6px;
+        opacity: 0.75;
+    }
+
+    .clinic-chat-form {
+        border-top: 1px solid #e5e7eb;
+        padding: 12px;
+        display: flex;
+        gap: 10px;
+        background: #ffffff;
+    }
+
+    .clinic-chat-input {
+        flex: 1;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+    }
+
+    .clinic-chat-send {
+        border: none;
+        background: #14b8a6;
+        color: #ffffff;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .clinic-chat-empty {
+        color: #64748b;
+        font-size: 13px;
+        padding: 10px 4px;
+    }
+
+    @media (max-width: 640px) {
+        .clinic-chat-widget {
+            right: 12px;
+            left: 12px;
+            width: auto;
+            height: 70vh;
+            bottom: 96px;
+        }
+
+        .clinic-chat-toggle {
+            right: 16px;
+            bottom: 16px;
+            width: 68px;
+            height: 68px;
+        }
+    }
+</style>
+
+<button
+    type="button"
+    id="clinicChatToggle"
+    class="clinic-chat-toggle"
+    data-start-url="{{ route('chat.widget.start') }}"
+    data-send-url="{{ route('chat.widget.send') }}"
+    data-fetch-url="{{ route('chat.widget.fetch') }}"
+>
     Chat
-</div>
+</button>
 
-<!-- CHAT BOX -->
-<div id="chatBox" style="
-    position:fixed;
-    bottom:90px;
-    right:20px;
-    width:320px;
-    height:420px;
-    background:#fff;
-    border:1px solid #dbe2ea;
-    border-radius:12px;
-    display:none;
-    flex-direction:column;
-    overflow:hidden;
-    z-index:999;
-">
-
-    <!-- HEADER -->
-    <div style="padding:10px;background:#0f9d8a;color:#fff;font-weight:700;">
-        Clinic Chat
+<div id="clinicChatWidget" class="clinic-chat-widget">
+    <div class="clinic-chat-header">
+        <span>Clinic Chat</span>
+        <button type="button" id="clinicChatClose" class="clinic-chat-close">×</button>
     </div>
 
-    <!-- MESSAGES -->
-    <div id="chatMessages" style="flex:1;overflow-y:auto;padding:10px;background:#f8fafc;"></div>
+    <div id="clinicChatMessages" class="clinic-chat-messages">
+        <div class="clinic-chat-empty">Start chatting with the clinic bot.</div>
+    </div>
 
-    <!-- INPUT -->
-    <form id="chatForm" style="display:flex;border-top:1px solid #e5e7eb;">
+    <form id="clinicChatForm" class="clinic-chat-form">
         @csrf
-        <input id="chatInput" name="message_text" type="text"
+        <input
+            type="text"
+            id="clinicChatInput"
+            class="clinic-chat-input"
+            name="message_text"
             placeholder="Type message..."
-            style="flex:1;padding:10px;border:none;outline:none;">
-        <button type="submit"
-            style="background:#0f9d8a;color:#fff;border:none;padding:0 14px;">
-            Send
-        </button>
+            autocomplete="off"
+            required
+        >
+        <button type="submit" class="clinic-chat-send">Send</button>
     </form>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    const toggleBtn = document.getElementById('clinicChatToggle');
+    const widget = document.getElementById('clinicChatWidget');
+    const closeBtn = document.getElementById('clinicChatClose');
+    const form = document.getElementById('clinicChatForm');
+    const input = document.getElementById('clinicChatInput');
+    const messagesBox = document.getElementById('clinicChatMessages');
 
-    const chatToggle = document.getElementById('chatToggle');
-    const chatBox = document.getElementById('chatBox');
-    const form = document.getElementById('chatForm');
-    const input = document.getElementById('chatInput');
-    const messagesBox = document.getElementById('chatMessages');
+    const startUrl = toggleBtn.dataset.startUrl;
+    const sendUrl = toggleBtn.dataset.sendUrl;
+    const fetchUrl = toggleBtn.dataset.fetchUrl;
+    const csrfToken = document.querySelector('#clinicChatForm input[name="_token"]').value;
 
-    // Toggle chat
-    chatToggle.addEventListener('click', function () {
-        chatBox.style.display = chatBox.style.display === 'flex' ? 'none' : 'flex';
+    let isStarted = false;
+    let isLoading = false;
+
+    toggleBtn.addEventListener('click', async function () {
+        widget.style.display = widget.style.display === 'flex' ? 'none' : 'flex';
+
+        if (widget.style.display === 'flex' && !isStarted) {
+            await startChat();
+            await loadMessages();
+        }
     });
 
-    const sendUrl = "{{ route('chat.guest.send') }}";
-    const fetchUrl = "{{ route('chat.guest.fetch', session('guest_chat_conversation_id') ?? 0) }}";
+    closeBtn.addEventListener('click', function () {
+        widget.style.display = 'none';
+    });
 
-    async function loadMessages() {
+    async function startChat() {
+        if (isStarted) {
+            return;
+        }
+
         try {
-            const res = await fetch(fetchUrl, {
+            const response = await fetch(startUrl, {
+                method: 'POST',
                 headers: {
-                    'Accept': 'application/json'
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             });
 
-            if (!res.ok) return;
+            if (!response.ok) {
+                messagesBox.innerHTML = '<div class="clinic-chat-empty">Chat is ready. You can start messaging.</div>';
+                isStarted = true;
+                return;
+            }
 
-            const data = await res.json();
-            messagesBox.innerHTML = '';
-
-            (data.messages || []).forEach(msg => {
-
-                const isGuest = msg.sender_type === 'guest';
-
-                messagesBox.innerHTML += `
-                    <div style="display:flex;justify-content:${isGuest ? 'flex-end' : 'flex-start'};margin-bottom:8px;">
-                        <div style="
-                            max-width:70%;
-                            padding:8px 10px;
-                            border-radius:8px;
-                            background:${isGuest ? '#0f9d8a' : '#fff'};
-                            color:${isGuest ? '#fff' : '#000'};
-                            border:1px solid #ddd;
-                        ">
-                            ${escapeHtml(msg.message_text)}
-                        </div>
-                    </div>
-                `;
-            });
-
-            messagesBox.scrollTop = messagesBox.scrollHeight;
-
-        } catch (e) {
-            console.error(e);
+            isStarted = true;
+        } catch (error) {
+            console.error('Failed to start chat:', error);
+            messagesBox.innerHTML = '<div class="clinic-chat-empty">Chat is ready. You can start messaging.</div>';
+            isStarted = true;
         }
     }
 
-    form.addEventListener('submit', async function (e) {
-        e.preventDefault();
+    async function loadMessages() {
+        if (isLoading) {
+            return;
+        }
 
-        const text = input.value.trim();
-        if (!text) return;
-
-        const formData = new FormData();
-        formData.append('message_text', text);
+        isLoading = true;
 
         try {
-            await fetch(sendUrl, {
-                method: 'POST',
+            const response = await fetch(fetchUrl, {
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
-                },
-                body: formData
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
             });
 
-            input.value = '';
-            loadMessages();
+            if (!response.ok) {
+                return;
+            }
 
-        } catch (e) {
-            console.error(e);
+            const data = await response.json();
+            renderMessages(data.messages || []);
+        } catch (error) {
+            console.error('Failed to load messages:', error);
+        } finally {
+            isLoading = false;
+        }
+    }
+
+    function renderMessages(messages) {
+        messagesBox.innerHTML = '';
+
+        if (!messages.length) {
+            messagesBox.innerHTML = '<div class="clinic-chat-empty">Start chatting with the clinic bot.</div>';
+            return;
+        }
+
+        messages.forEach(function (message) {
+            appendMessage(
+                message.sender_type,
+                message.message_text || message.message_body || '',
+                message.sent_at
+            );
+        });
+
+        scrollMessagesToBottom();
+    }
+
+    function appendMessage(senderType, text, sentAt) {
+        const row = document.createElement('div');
+        const bubble = document.createElement('div');
+        const label = document.createElement('div');
+        const body = document.createElement('div');
+        const time = document.createElement('div');
+
+        const isGuest = senderType === 'guest';
+
+        row.className = 'clinic-chat-row ' + (isGuest ? 'guest' : 'bot');
+        bubble.className = 'clinic-chat-bubble ' + (isGuest ? 'guest' : 'bot');
+        label.className = 'clinic-chat-label';
+        body.className = 'clinic-chat-body';
+        time.className = 'clinic-chat-time';
+
+        label.textContent = isGuest ? 'You' : 'Clinic Bot';
+        body.textContent = text;
+        time.textContent = formatDate(sentAt);
+
+        bubble.appendChild(label);
+        bubble.appendChild(body);
+        bubble.appendChild(time);
+        row.appendChild(bubble);
+        messagesBox.appendChild(row);
+    }
+
+    form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const text = input.value.trim();
+
+        if (!text) {
+            return;
+        }
+
+        if (!isStarted) {
+            await startChat();
+        }
+
+        appendMessage('guest', text, new Date().toISOString());
+        scrollMessagesToBottom();
+
+        input.value = '';
+        input.disabled = true;
+
+        try {
+            const response = await fetch(sendUrl, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    message_text: text
+                })
+            });
+
+            if (!response.ok) {
+                appendMessage('bot', 'Thank you for your message. Our clinic chatbot is temporarily limited, but your message has been received.', new Date().toISOString());
+                scrollMessagesToBottom();
+                return;
+            }
+
+            const data = await response.json();
+
+            if (data.bot_message) {
+                appendMessage(
+                    'bot',
+                    data.bot_message.message_text || data.bot_message.message_body || '',
+                    data.bot_message.sent_at
+                );
+            } else {
+                await loadMessages();
+            }
+
+            scrollMessagesToBottom();
+        } catch (error) {
+            console.error('Failed to send message:', error);
+            appendMessage('bot', 'Thank you for your message. Our clinic chatbot is temporarily limited, but your message has been received.', new Date().toISOString());
+            scrollMessagesToBottom();
+        } finally {
+            input.disabled = false;
+            input.focus();
         }
     });
 
-    function escapeHtml(str) {
-        return str.replace(/[&<>"']/g, m => ({
-            '&': '&amp;',
-            '<': '&lt;',
-            '>': '&gt;',
-            '"': '&quot;',
-            "'": '&#039;'
-        })[m]);
+    function formatDate(value) {
+        if (!value) {
+            return '';
+        }
+
+        const date = new Date(value);
+
+        if (isNaN(date.getTime())) {
+            return '';
+        }
+
+        return date.toLocaleString();
     }
 
-    // auto refresh
-    setInterval(loadMessages, 4000);
+    function scrollMessagesToBottom() {
+        messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+
+    setInterval(function () {
+        if (widget.style.display === 'flex' && isStarted) {
+            loadMessages();
+        }
+    }, 2000);
 });
 </script>
 @endsection

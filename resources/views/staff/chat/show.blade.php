@@ -249,6 +249,72 @@
         opacity: 0.7;
     }
 
+    .chat-suggest-wrap {
+        padding: 10px 12px 0;
+        background: #ffffff;
+    }
+
+    .chat-suggest-panel {
+        display: none;
+        background: #f8fafc;
+        border: 1px solid #dbe2ea;
+        border-radius: 14px;
+        padding: 10px;
+    }
+
+    .chat-suggest-title {
+        font-size: 12px;
+        font-weight: 700;
+        color: #64748b;
+        margin-bottom: 8px;
+    }
+
+    .chat-suggest-list {
+        display: grid;
+        gap: 8px;
+    }
+
+    .chat-suggest-item {
+        border: 1px solid #c4b5fd;
+        background: #ede9fe;
+        color: #4c1d95;
+        border-radius: 999px;
+        padding: 8px 12px;
+        font-size: 13px;
+        line-height: 1.4;
+        cursor: pointer;
+        text-align: left;
+        transition: 0.2s ease;
+    }
+
+    .chat-suggest-item:hover {
+        background: #ddd6fe;
+    }
+
+    .chat-suggest-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+
+    .chat-suggest-action-btn {
+        border: 1px solid #cbd5e1;
+        background: #ffffff;
+        color: #334155;
+        border-radius: 999px;
+        padding: 7px 12px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .chat-suggest-action-btn.primary {
+        background: #0f9d8a;
+        border-color: #0f9d8a;
+        color: #ffffff;
+    }
+
     .chat-form {
         border-top: 1px solid #e5e7eb;
         padding: 12px;
@@ -344,14 +410,14 @@
         </div>
     </div>
 
-   <div
-    class="chat-panel"
-    id="staffChatApp"
-    data-fetch-url="{{ route('staff.messages.fetch', $conversation->conversation_id) }}"
-    data-suggest-url="{{ route('staff.ai.suggest-reply', ['conversation' => $conversation->conversation_id]) }}"
-    data-csrf-token="{{ csrf_token() }}"
-    data-conversation-status="{{ $conversation->conversation_status }}"
->
+    <div
+        class="chat-panel"
+        id="staffChatApp"
+        data-fetch-url="{{ route('staff.messages.fetch', $conversation->conversation_id) }}"
+        data-suggest-url="{{ route('staff.ai.suggest-reply', ['conversation' => $conversation->conversation_id]) }}"
+        data-csrf-token="{{ csrf_token() }}"
+        data-conversation-status="{{ $conversation->conversation_status }}"
+    >
         <div class="chat-header">
             <div class="chat-header-left">
                 <a href="{{ route('staff.messages.index') }}" class="chat-back">←</a>
@@ -464,31 +530,49 @@
             @endforeach
         </div>
 
+        @if($conversation->conversation_status !== 'closed')
+            <div class="chat-suggest-wrap">
+                <div id="chatSuggestPanel" class="chat-suggest-panel">
+                    <div class="chat-suggest-title">Suggested Replies</div>
+                    <div id="chatSuggestList" class="chat-suggest-list"></div>
+
+                    <div class="chat-suggest-actions">
+                        <button type="button" id="refreshSuggestionBtn" class="chat-suggest-action-btn">
+                            Refresh
+                        </button>
+                        <button type="button" id="hideSuggestionBtn" class="chat-suggest-action-btn">
+                            Hide
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
+
         @if($conversation->conversation_status === 'closed')
-    <div class="chat-form">
-        <input
-    type="text"
-    id="staffReplyInput"
-    class="chat-input"
-    value="This conversation is closed."
-    disabled
->
-        <button type="button" class="chat-send" disabled>Send</button>
-    </div>
-@else
-    <form class="chat-form" method="POST" action="{{ route('staff.messages.reply', $conversation->conversation_id) }}">
-        @csrf
-        <input
-    type="text"
-    name="message_text"
-    id="staffReplyInput"
-    class="chat-input"
-    placeholder="Type your reply..."
-    required
->
-        <button type="submit" class="chat-send">Send</button>
-    </form>
-@endif
+            <div class="chat-form">
+                <input
+                    type="text"
+                    id="staffReplyInput"
+                    class="chat-input"
+                    value="This conversation is closed."
+                    disabled
+                >
+                <button type="button" class="chat-send" disabled>Send</button>
+            </div>
+        @else
+            <form class="chat-form" method="POST" action="{{ route('staff.messages.reply', $conversation->conversation_id) }}">
+                @csrf
+                <input
+                    type="text"
+                    name="message_text"
+                    id="staffReplyInput"
+                    class="chat-input"
+                    placeholder="Type your reply..."
+                    required
+                >
+                <button type="submit" class="chat-send">Send</button>
+            </form>
+        @endif
     </div>
 </div>
 
@@ -502,7 +586,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const dropdown = document.getElementById('menuDropdown');
     const viewDetailsBtn = document.getElementById('viewDetailsBtn');
     const chatDetailsPanel = document.getElementById('chatDetailsPanel');
-    const suggestReplyBtn = document.getElementById('suggestReplyBtn');
+
+    const suggestPanel = document.getElementById('chatSuggestPanel');
+    const suggestList = document.getElementById('chatSuggestList');
+    const refreshSuggestionBtn = document.getElementById('refreshSuggestionBtn');
+    const hideSuggestionBtn = document.getElementById('hideSuggestionBtn');
 
     if (menuBtn && dropdown) {
         menuBtn.addEventListener('click', function (e) {
@@ -588,38 +676,39 @@ document.addEventListener('DOMContentLoaded', function () {
 
             messagesBox.scrollTop = messagesBox.scrollHeight;
 
-            await tryAutoSuggest(latestExternalMessage);
+            await tryAutoSuggest(latestExternalMessage, false);
         } catch (error) {
             console.error('Failed to load staff messages:', error);
         }
     }
 
-    async function tryAutoSuggest(latestExternalMessage) {
-        if (!replyInput) {
+    async function tryAutoSuggest(latestExternalMessage, forceRefresh = false) {
+        if (!replyInput || !suggestPanel || !suggestList) {
             return;
         }
 
         if (conversationStatus === 'closed') {
+            hideSuggestions();
             return;
         }
 
         if (!latestExternalMessage) {
+            hideSuggestions();
             return;
         }
 
-        if (replyInput.value.trim() !== '') {
-            return;
-        }
-
-        const latestText = String(latestExternalMessage.message_text || latestExternalMessage.message_body || '').trim();
+        const latestText = String(
+            latestExternalMessage.message_text || latestExternalMessage.message_body || ''
+        ).trim();
 
         if (!latestText) {
+            hideSuggestions();
             return;
         }
 
         const suggestKey = `${latestExternalMessage.message_id || ''}:${latestText}`;
 
-        if (lastSuggestKey === suggestKey) {
+        if (!forceRefresh && lastSuggestKey === suggestKey) {
             return;
         }
 
@@ -638,26 +727,94 @@ document.addEventListener('DOMContentLoaded', function () {
             });
 
             if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    console.error('Suggest request failed:', response.status, errorData);
-    return;
-}
+                const errorData = await response.json().catch(() => null);
+                console.error('Suggest request failed:', response.status, errorData);
+
+                renderSuggestions([
+                    'Thank you for your message. Our clinic staff will assist you shortly.',
+                    'We have received your message and will get back to you as soon as possible.',
+                    'Thank you. Please wait while clinic staff reviews your concern.'
+                ]);
+
+                return;
+            }
 
             const data = await response.json();
 
-            if (replyInput.value.trim() === '' && data.suggested_reply) {
-                replyInput.value = data.suggested_reply;
+            if (data.suggested_reply) {
                 lastSuggestKey = suggestKey;
+
+                renderSuggestions([
+                    data.suggested_reply,
+                    'Thank you for your message. Our clinic staff will assist you shortly.',
+                    'We have received your concern and will respond as soon as possible.'
+                ]);
+            } else {
+                renderSuggestions([
+                    'Thank you for your message. Our clinic staff will assist you shortly.',
+                    'We have received your concern and will get back to you soon.'
+                ]);
             }
         } catch (error) {
             console.error('Failed to get AI suggestion:', error);
+
+            renderSuggestions([
+                'Thank you for your message. Our clinic staff will assist you shortly.',
+                'We have received your concern and will get back to you soon.'
+            ]);
         }
     }
 
-    if (suggestReplyBtn) {
-        suggestReplyBtn.addEventListener('click', async function () {
+    function renderSuggestions(items) {
+        const cleanItems = (items || []).filter(Boolean);
+
+        if (!cleanItems.length) {
+            hideSuggestions();
+            return;
+        }
+
+        suggestList.innerHTML = '';
+
+        cleanItems.forEach(function (text) {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'chat-suggest-item';
+            btn.textContent = text;
+
+            btn.addEventListener('click', function () {
+                if (!replyInput) {
+                    return;
+                }
+
+                replyInput.value = text;
+                replyInput.focus();
+            });
+
+            suggestList.appendChild(btn);
+        });
+
+        suggestPanel.style.display = 'block';
+    }
+
+    function hideSuggestions() {
+        if (!suggestPanel || !suggestList) {
+            return;
+        }
+
+        suggestList.innerHTML = '';
+        suggestPanel.style.display = 'none';
+    }
+
+    if (refreshSuggestionBtn) {
+        refreshSuggestionBtn.addEventListener('click', async function () {
             lastSuggestKey = '';
             await loadMessages();
+        });
+    }
+
+    if (hideSuggestionBtn) {
+        hideSuggestionBtn.addEventListener('click', function () {
+            hideSuggestions();
         });
     }
 

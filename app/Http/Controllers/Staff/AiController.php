@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Staff;
 
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
+use App\Services\Ai\ClinicChatbotService;
 use App\Services\Ai\ReplySuggestionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,10 +16,11 @@ class AiController extends Controller
     public function suggestReply(
         Request $request,
         Conversation $conversation,
-        ReplySuggestionService $service
+        ReplySuggestionService $service,
+        ClinicChatbotService $chatbotService
     ): JsonResponse {
         try {
-            if ($conversation->conversation_status === 'closed') {
+            if (($conversation->conversation_status ?? null) === 'closed') {
                 return response()->json([
                     'suggested_reply' => '',
                     'message' => 'Conversation is closed.',
@@ -37,9 +39,7 @@ class AiController extends Controller
                 ]);
             }
 
-            $latestMessageText = trim(
-                (string) ($latestSenderMessage->message_text ?: $latestSenderMessage->message_body)
-            );
+            $latestMessageText = trim((string) ($latestSenderMessage->message_text ?? ''));
 
             if ($latestMessageText === '') {
                 return response()->json([
@@ -50,38 +50,50 @@ class AiController extends Controller
 
             $recentMessages = $conversation->messages()
                 ->orderByDesc('message_id')
-                ->limit(6)
+                ->limit(8)
                 ->get()
                 ->reverse()
                 ->map(function ($message) {
                     return [
                         'sender_type' => $message->sender_type,
-                        'message_text' => (string) ($message->message_text ?: $message->message_body ?: ''),
+                        'message_text' => (string) ($message->message_text ?? ''),
                     ];
                 })
                 ->values()
                 ->all();
 
-            $suggestedReply = $service->suggestFromConversation(
-                latestMessage: $latestMessageText,
-                conversationMessages: $recentMessages,
-                isGuest: (bool) $conversation->is_guest
-            );
+            try {
+                $suggestedReply = $service->suggestFromConversation(
+                    latestMessage: $latestMessageText,
+                    conversationMessages: $recentMessages,
+                    isGuest: (bool) ($conversation->is_guest ?? false)
+                );
+            } catch (Throwable $inner) {
+                Log::warning('AI suggest reply fallback used', [
+                    'conversation_id' => $conversation->conversation_id,
+                    'error' => $inner->getMessage(),
+                ]);
+
+                $payload = $chatbotService->generateReplyPayload(
+                    $latestMessageText,
+                    (bool) ($conversation->is_guest ?? false)
+                );
+
+                $suggestedReply = (string) ($payload['reply'] ?? 'Thank you for your message. Our clinic staff will assist you shortly.');
+            }
 
             return response()->json([
                 'suggested_reply' => (string) $suggestedReply,
             ]);
         } catch (Throwable $e) {
             Log::error('AI suggest reply failed', [
-                'conversation_id' => $conversation->conversation_id,
+                'conversation_id' => $conversation->conversation_id ?? null,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
-                'suggested_reply' => '',
-                'error' => $e->getMessage(),
-            ], 500);
+                'suggested_reply' => 'Thank you for your message. Our clinic staff will assist you shortly.',
+            ]);
         }
     }
 }
